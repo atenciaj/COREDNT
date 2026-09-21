@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Integridad SIMAT</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body { 
+      background: #f5f5f5; 
+      padding: 20px;
+    }
+    .test-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .test-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+    }
+    .test-section {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .test-section h3 {
+      color: #667eea;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
+    }
+    .test-result {
+      padding: 10px 15px;
+      border-radius: 6px;
+      margin: 5px 0;
+      font-family: monospace;
+    }
+    .test-success {
+      background: #d4edda;
+      color: #155724;
+      border-left: 4px solid #28a745;
+    }
+    .test-error {
+      background: #f8d7da;
+      color: #721c24;
+      border-left: 4px solid #dc3545;
+    }
+    .test-info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border-left: 4px solid #17a2b8;
+    }
+    .score-display {
+      font-size: 2rem;
+      font-weight: bold;
+      text-align: center;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+    .btn-test {
+      margin: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <div class="test-header">
+      <h1><i class="bi bi-shield-lock-fill me-2"></i>Test de Integridad SIMAT</h1>
+      <p class="mb-0">Pruebas del módulo de gestión de integridad</p>
+    </div>
+
+    <!-- DB Module Test -->
+    <div class="test-section">
+      <h3><i class="bi bi-database me-2"></i>1. Módulo de Base de Datos</h3>
+      <div id="db-tests"></div>
+    </div>
+
+    <!-- Integrity Module Test -->
+    <div class="test-section">
+      <h3><i class="bi bi-activity me-2"></i>2. Módulo de Integridad</h3>
+      <div id="integrity-tests"></div>
+    </div>
+
+    <!-- Score Calculator Test -->
+    <div class="test-section">
+      <h3><i class="bi bi-calculator me-2"></i>3. Calculadora de Scores</h3>
+      <div class="row">
+        <div class="col-md-6">
+          <h5>Ultrasonido (UT)</h5>
+          <div class="mb-3">
+            <label>Espesor Nominal (mm):</label>
+            <input type="number" id="ut-espesor-nominal" class="form-control" value="12.7" step="0.1">
+          </div>
+          <div class="mb-3">
+            <label>Espesor Real (mm):</label>
+            <input type="number" id="ut-espesor-real" class="form-control" value="9.2" step="0.1">
+          </div>
+          <div class="mb-3">
+            <label>Tasa Corrosión (mm/año):</label>
+            <input type="number" id="ut-tasa" class="form-control" value="0.25" step="0.01">
+          </div>
+          <div class="mb-3">
+            <label>Vida Útil (años):</label>
+            <input type="number" id="ut-vida" class="form-control" value="6.5" step="0.5">
+          </div>
+          <button class="btn btn-primary" onclick="testUT()">Calcular UT</button>
+          <div id="ut-result"></div>
+        </div>
+        <div class="col-md-6">
+          <h5>Partículas Magnéticas (MT)</h5>
+          <div class="mb-3">
+            <label>Indicaciones Lineales:</label>
+            <input type="number" id="mt-lineales" class="form-control" value="2">
+          </div>
+          <div class="mb-3">
+            <label>Indicaciones Redondas:</label>
+            <input type="number" id="mt-redondas" class="form-control" value="3">
+          </div>
+          <div class="mb-3">
+            <label>Tamaño Máximo (mm):</label>
+            <input type="number" id="mt-tamano" class="form-control" value="2.5" step="0.1">
+          </div>
+          <button class="btn btn-danger" onclick="testMT()">Calcular MT</button>
+          <div id="mt-result"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- UI Module Test -->
+    <div class="test-section">
+      <h3><i class="bi bi-diagram-3 me-2"></i>4. Interfaz de Usuario</h3>
+      <div id="ui-tests"></div>
+      <div id="arbol-integridad" style="margin-top: 20px;"></div>
+      <div id="detalle-componente" style="margin-top: 20px;"></div>
+    </div>
+  </div>
+
+  <script src="js/db.js"></script>
+  <script src="js/integridad_evaluaciones.js"></script>
+  <script src="js/gestion_integridad.js"></script>
+
+  <script>
+    // Test DB Module
+    async function testDB() {
+      const container = document.getElementById('db-tests');
+      
+      try {
+        // Test 1: Init DB
+        logTest(container, 'Iniciando base de datos...', 'info');
+        await window.NDT.db.initDB();
+        logTest(container, '✓ Base de datos inicializada correctamente', 'success');
+        
+        // Test 2: Check stores
+        logTest(container, 'Verificando stores...', 'info');
+        const db = window.NDT.db.getDB();
+        const stores = Array.from(db.objectStoreNames);
+        const hasEvaluaciones = stores.includes('swell_evaluaciones');
+        const hasVinculacion = stores.includes('swell_ndt_vinculacion');
+        
+        if (hasEvaluaciones && hasVinculacion) {
+          logTest(container, '✓ Stores de integridad creados', 'success');
+        } else {
+          logTest(container, '✗ Stores de integridad no encontrados', 'error');
+        }
+        
+        // Test 3: Check functions
+        logTest(container, 'Verificando funciones CRUD...', 'info');
+        const functions = [
+          'saveEvaluacion', 'getEvaluacionesByEntity', 'getAllEvaluaciones',
+          'saveNdtVinculacion', 'getNdtVinculacionesByEntity', 'getAllNdtVinculaciones'
+        ];
+        
+        functions.forEach(fn => {
+          if (typeof window.NDT.db[fn] === 'function') {
+            logTest(container, `✓ ${fn} disponible`, 'success');
+          } else {
+            logTest(container, `✗ ${fn} no disponible`, 'error');
+          }
+        });
+        
+      } catch (error) {
+        logTest(container, `✗ Error: ${error.message}`, 'error');
+      }
+    }
+
+    // Test Integrity Module
+    function testIntegrity() {
+      const container = document.getElementById('integrity-tests');
+      
+      try {
+        // Test functions exist
+        const functions = [
+          'calcularScoreUT', 'calcularScoreMT', 'calcularScorePT', 'calcularScoreVT',
+          'determinarEstado', 'calcularCriticidad', 'generarRecomendaciones'
+        ];
+        
+        logTest(container, 'Verificando funciones de integridad...', 'info');
+        functions.forEach(fn => {
+          if (typeof window.NDT.Integridad[fn] === 'function') {
+            logTest(container, `✓ ${fn} disponible`, 'success');
+          } else {
+            logTest(container, `✗ ${fn} no disponible`, 'error');
+          }
+        });
+        
+        // Test score calculation
+        logTest(container, 'Probando cálculo de score UT...', 'info');
+        const score = window.NDT.Integridad.calcularScoreUT(12.7, 9.2, 0.25, 6.5);
+        logTest(container, `Score calculado: ${score}/100`, 'success');
+        
+        // Test state determination
+        const estado = window.NDT.Integridad.determinarEstado(score);
+        logTest(container, `Estado: ${estado}`, 'success');
+        
+      } catch (error) {
+        logTest(container, `✗ Error: ${error.message}`, 'error');
+      }
+    }
+
+    // Test UT Calculator
+    function testUT() {
+      const espesorNominal = parseFloat(document.getElementById('ut-espesor-nominal').value);
+      const espesorReal = parseFloat(document.getElementById('ut-espesor-real').value);
+      const tasa = parseFloat(document.getElementById('ut-tasa').value);
+      const vida = parseFloat(document.getElementById('ut-vida').value);
+      
+      const score = window.NDT.Integridad.calcularScoreUT(espesorNominal, espesorReal, tasa, vida);
+      const estado = window.NDT.Integridad.determinarEstado(score);
+      const color = window.NDT.Integridad.getColorPorEstado(estado);
+      
+      document.getElementById('ut-result').innerHTML = `
+        <div class="score-display" style="background: ${color}20; color: ${color};">
+          ${score}/100
+          <div style="font-size: 1rem; margin-top: 10px;">${estado}</div>
+        </div>
+      `;
+    }
+
+    // Test MT Calculator
+    function testMT() {
+      const lineales = parseInt(document.getElementById('mt-lineales').value);
+      const redondas = parseInt(document.getElementById('mt-redondas').value);
+      const tamano = parseFloat(document.getElementById('mt-tamano').value);
+      
+      const score = window.NDT.Integridad.calcularScoreMT(lineales, redondas, tamano);
+      const estado = window.NDT.Integridad.determinarEstado(score);
+      const color = window.NDT.Integridad.getColorPorEstado(estado);
+      
+      document.getElementById('mt-result').innerHTML = `
+        <div class="score-display" style="background: ${color}20; color: ${color};">
+          ${score}/100
+          <div style="font-size: 1rem; margin-top: 10px;">${estado}</div>
+        </div>
+      `;
+    }
+
+    // Helper function
+    function logTest(container, message, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `test-result test-${type}`;
+      div.innerHTML = message;
+      container.appendChild(div);
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', async () => {
+      console.log('Iniciando tests...');
+      await testDB();
+      testIntegrity();
+      
+      // Test UI Module
+      const uiContainer = document.getElementById('ui-tests');
+      if (window.NDT.GestionIntegridad) {
+        logTest(uiContainer, '✓ Módulo de UI cargado', 'success');
+        logTest(uiContainer, 'Iniciando módulo de gestión de integridad...', 'info');
+        try {
+          await window.NDT.GestionIntegridad.init();
+          logTest(uiContainer, '✓ Módulo inicializado correctamente', 'success');
+        } catch (error) {
+          logTest(uiContainer, `✗ Error al inicializar: ${error.message}`, 'error');
+        }
+      } else {
+        logTest(uiContainer, '✗ Módulo de UI no cargado', 'error');
+      }
+    });
+  </script>
+</body>
+</html>

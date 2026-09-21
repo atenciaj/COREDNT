@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoliWel NDT - Diagrama Entidad Relación</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e4e4e7;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #60a5fa, #a78bfa, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #a1a1aa;
+            font-size: 1.1rem;
+        }
+        
+        .section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #60a5fa;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(180deg, #60a5fa, #a78bfa);
+            border-radius: 2px;
+        }
+        
+        /* Core Reports Grid */
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .entity {
+            background: rgba(30, 30, 50, 0.8);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .entity:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(96, 165, 250, 0.2);
+        }
+        
+        .entity-header {
+            padding: 15px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .entity-header.core {
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(167, 139, 250, 0.2));
+        }
+        
+        .entity-header.swell {
+            background: linear-gradient(135deg, rgba(52, 211, 153, 0.2), rgba(96, 165, 250, 0.2));
+        }
+        
+        .entity-header span {
+            background: rgba(0,0,0,0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+        
+        .entity-fields {
+            padding: 15px;
+        }
+        
+        .field {
+            display: flex;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .field:last-child {
+            border-bottom: none;
+        }
+        
+        .field-key {
+            color: #f472b6;
+            font-weight: 500;
+            margin-right: 8px;
+        }
+        
+        .field-index {
+            color: #60a5fa;
+            font-weight: 500;
+            margin-right: 8px;
+        }
+        
+        .field-normal {
+            color: #a1a1aa;
+        }
+        
+        /* Management Grid */
+        .management-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        /* Relationships */
+        .relationships {
+            background: rgba(30, 30, 50, 0.5);
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+        
+        .relationships h3 {
+            color: #a78bfa;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+        
+        .rel-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .rel-table th,
+        .rel-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .rel-table th {
+            color: #60a5fa;
+            font-weight: 500;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .rel-table td {
+            font-size: 0.9rem;
+        }
+        
+        .rel-type {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34d399;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(167, 139, 250, 0.1));
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stat-label {
+            color: #a1a1aa;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+        
+        .legend-dot.pk {
+            background: #f472b6;
+        }
+        
+        .legend-dot.idx {
+            background: #60a5fa;
+        }
+        
+        .legend-dot.normal {
+            background: #a1a1aa;
+        }
+        
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+                color: #1a1a2e;
+            }
+            
+            .entity {
+                border: 1px solid #ddd;
+                background: white;
+            }
+            
+            .section {
+                background: white;
+                border: 1px solid #ddd;
+            }
+            
+            .entity-header {
+                background: #f3f4f6 !important;
+                color: #1a1a2e !important;
+            }
+            
+            .field {
+                color: #374151 !important;
+                border-color: #e5e7eb !important;
+            }
+            
+            .header h1 {
+                background: none;
+                -webkit-text-fill-color: #1a1a2e;
+            }
+        }
+        
+        @media (max-width: 1200px) {
+            .reports-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .management-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .reports-grid,
+            .management-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔗 Diagrama Entidad-Relación</h1>
+            <p>SoliWel NDT - Base de Datos: soliwel_ndt (v7)</p>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-dot pk"></div>
+                <span>PK = Primary Key</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot idx"></div>
+                <span>Idx = Indexed</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot normal"></div>
+                <span>Campo</span>
+            </div>
+        </div>
+        
+        <!-- Core Reports Section -->
+        <div class="section">
+            <div class="section-title">Reportes NDT (Core)</div>
+            
+            <div class="reports-grid">
+                <div class="entity">
+                    <div class="entity-header core">
+                        pt_reports <span>PT</span>
+                    </div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> report_number (unique)</div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                        <div class="field"><span class="field-normal">updated_at</span></div>
+                        <div class="field"><span class="field-normal">cliente</span></div>
+                        <div class="field"><span class="field-normal">norma</span></div>
+                        <div class="field"><span class="field-normal">resultado</span></div>
+                        <div class="field"><span class="field-normal">(campos PT específicos)</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header core">
+                        mt_reports <span>MT</span>
+                    </div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> report_number (unique)</div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                        <div class="field"><span class="field-normal">updated_at</span></div>
+                        <div class="field"><span class="field-normal">cliente</span></div>
+                        <div class="field"><span class="field-normal">norma</span></div>
+                        <div class="field"><span class="field-normal">resultado</span></div>
+                        <div class="field"><span class="field-normal">(campos MT específicos)</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header core">
+                        ut_reports <span>UT</span>
+                    </div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> report_number (unique)</div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                        <div class="field"><span class="field-normal">updated_at</span></div>
+                        <div class="field"><span class="field-normal">cliente</span></div>
+                        <div class="field"><span class="field-normal">norma</span></div>
+                        <div class="field"><span class="field-normal">resultado</span></div>
+                        <div class="field"><span class="field-normal">(campos UT específicos)</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header core">
+                        vt_reports <span>VT</span>
+                    </div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> report_number (unique)</div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                        <div class="field"><span class="field-normal">updated_at</span></div>
+                        <div class="field"><span class="field-normal">cliente</span></div>
+                        <div class="field"><span class="field-normal">norma</span></div>
+                        <div class="field"><span class="field-normal">resultado</span></div>
+                        <div class="field"><span class="field-normal">(campos VT específicos)</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="reports-grid">
+                <div class="entity">
+                    <div class="entity-header core">jobs</div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                        <div class="field"><span class="field-normal">job_data</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header core">consecutives</div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> type</div>
+                        <div class="field"><span class="field-normal">value</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header core">autocomplete_cache</div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> key</div>
+                        <div class="field"><span class="field-normal">values[]</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- SoliWel Management Section -->
+        <div class="section">
+            <div class="section-title">Gestión SoliWel Stores</div>
+            
+            <div class="management-grid">
+                <div class="entity">
+                    <div class="entity-header swell">swell_clientes</div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> codigo</div>
+                        <div class="field"><span class="field-normal">nombre</span></div>
+                        <div class="field"><span class="field-normal">ruc</span></div>
+                        <div class="field"><span class="field-normal">telefono</span></div>
+                        <div class="field"><span class="field-normal">email</span></div>
+                        <div class="field"><span class="field-normal">direccion</span></div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                        <div class="field"><span class="field-normal">updated_at</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header swell">swell_proyectos</div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> codigo</div>
+                        <div class="field"><span class="field-index">Idx</span> cliente_id (FK)</div>
+                        <div class="field"><span class="field-normal">nombre</span></div>
+                        <div class="field"><span class="field-normal">descripcion</span></div>
+                        <div class="field"><span class="field-normal">estado</span></div>
+                        <div class="field"><span class="field-normal">fecha_inicio</span></div>
+                        <div class="field"><span class="field-normal">fecha_fin</span></div>
+                        <div class="field"><span class="field-normal">ubicacion</span></div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header swell">swell_ordenes</div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> codigo</div>
+                        <div class="field"><span class="field-index">Idx</span> proyecto_id (FK)</div>
+                        <div class="field"><span class="field-normal">titulo</span></div>
+                        <div class="field"><span class="field-normal">descripcion</span></div>
+                        <div class="field"><span class="field-normal">tipo_servicio</span></div>
+                        <div class="field"><span class="field-normal">estado</span></div>
+                        <div class="field"><span class="field-normal">prioridad</span></div>
+                        <div class="field"><span class="field-normal">fecha_entrega</span></div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header swell">swell_equipos</div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> codigo</div>
+                        <div class="field"><span class="field-normal">nombre</span></div>
+                        <div class="field"><span class="field-normal">tipo</span></div>
+                        <div class="field"><span class="field-normal">marca</span></div>
+                        <div class="field"><span class="field-normal">modelo</span></div>
+                        <div class="field"><span class="field-normal">serie</span></div>
+                        <div class="field"><span class="field-normal">estado</span></div>
+                        <div class="field"><span class="field-normal">ubicacion</span></div>
+                        <div class="field"><span class="field-normal">fecha_calibracion</span></div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header swell">swell_calibraciones</div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> equipo_id (FK)</div>
+                        <div class="field"><span class="field-normal">fecha_calibracion</span></div>
+                        <div class="field"><span class="field-normal">fecha_proxima</span></div>
+                        <div class="field"><span class="field-normal">laboratorio</span></div>
+                        <div class="field"><span class="field-normal">certificado</span></div>
+                        <div class="field"><span class="field-normal">resultado</span></div>
+                        <div class="field"><span class="field-normal">observaciones</span></div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header swell">swell_certificaciones</div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> codigo</div>
+                        <div class="field"><span class="field-index">Idx</span> equipo_id (FK)</div>
+                        <div class="field"><span class="field-index">Idx</span> tecnico_id (FK)</div>
+                        <div class="field"><span class="field-normal">metodo</span></div>
+                        <div class="field"><span class="field-normal">nivel</span></div>
+                        <div class="field"><span class="field-normal">estado</span></div>
+                        <div class="field"><span class="field-normal">fecha_emision</span></div>
+                        <div class="field"><span class="field-normal">fecha_vencimiento</span></div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header swell">swell_procedimientos</div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> codigo</div>
+                        <div class="field"><span class="field-normal">titulo</span></div>
+                        <div class="field"><span class="field-normal">metodo</span></div>
+                        <div class="field"><span class="field-normal">version</span></div>
+                        <div class="field"><span class="field-normal">norma</span></div>
+                        <div class="field"><span class="field-normal">estado</span></div>
+                        <div class="field"><span class="field-normal">fecha_emision</span></div>
+                        <div class="field"><span class="field-normal">fecha_vencimiento</span></div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header swell">swell_indicadores</div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> codigo</div>
+                        <div class="field"><span class="field-normal">nombre</span></div>
+                        <div class="field"><span class="field-normal">descripcion</span></div>
+                        <div class="field"><span class="field-normal">categoria</span></div>
+                        <div class="field"><span class="field-normal">tipo_medicion</span></div>
+                        <div class="field"><span class="field-normal">unidad</span></div>
+                        <div class="field"><span class="field-normal">meta</span></div>
+                        <div class="field"><span class="field-normal">valor_actual</span></div>
+                        <div class="field"><span class="field-normal">estado</span></div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header swell">swell_solicitudes_almacen</div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> codigo</div>
+                        <div class="field"><span class="field-normal">tipo</span></div>
+                        <div class="field"><span class="field-normal">fecha_solicitud</span></div>
+                        <div class="field"><span class="field-normal">solicitante</span></div>
+                        <div class="field"><span class="field-normal">estado</span></div>
+                        <div class="field"><span class="field-normal">prioridad</span></div>
+                        <div class="field"><span class="field-normal">items[]</span></div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header swell">swell_inventario_almacen</div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> codigo</div>
+                        <div class="field"><span class="field-normal">nombre</span></div>
+                        <div class="field"><span class="field-normal">categoria</span></div>
+                        <div class="field"><span class="field-normal">unidad</span></div>
+                        <div class="field"><span class="field-normal">cantidad</span></div>
+                        <div class="field"><span class="field-normal">cantidad_minima</span></div>
+                        <div class="field"><span class="field-normal">ubicacion</span></div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header swell">swell_actividades</div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> codigo</div>
+                        <div class="field"><span class="field-index">Idx</span> tipo</div>
+                        <div class="field"><span class="field-index">Idx</span> estado</div>
+                        <div class="field"><span class="field-index">Idx</span> fecha_inicio</div>
+                        <div class="field"><span class="field-index">Idx</span> equipo_asignado</div>
+                        <div class="field"><span class="field-normal">titulo</span></div>
+                        <div class="field"><span class="field-normal">descripcion</span></div>
+                        <div class="field"><span class="field-normal">fecha_fin</span></div>
+                        <div class="field"><span class="field-normal">ubicacion</span></div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header swell">swell_recursos_asignados</div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> actividad_id (FK)</div>
+                        <div class="field"><span class="field-index">Idx</span> recurso_id</div>
+                        <div class="field"><span class="field-index">Idx</span> recurso_tipo</div>
+                        <div class="field"><span class="field-normal">horas_asignadas</span></div>
+                        <div class="field"><span class="field-normal">estado</span></div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header swell">swell_programacion</div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> actividad_id (FK)</div>
+                        <div class="field"><span class="field-index">Idx</span> fecha_hora_inicio</div>
+                        <div class="field"><span class="field-normal">fecha_hora_fin</span></div>
+                        <div class="field"><span class="field-normal">tecnico_asignado</span></div>
+                        <div class="field"><span class="field-normal">notas</span></div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                    </div>
+                </div>
+                
+                <div class="entity">
+                    <div class="entity-header swell">swell_fichas_seguridad</div>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-key">PK</span> id</div>
+                        <div class="field"><span class="field-index">Idx</span> numero_ficha</div>
+                        <div class="field"><span class="field-index">Idx</span> categoria</div>
+                        <div class="field"><span class="field-index">Idx</span> nivel_riesgo</div>
+                        <div class="field"><span class="field-normal">nombre_producto</span></div>
+                        <div class="field"><span class="field-normal">fabricante</span></div>
+                        <div class="field"><span class="field-normal">hoja_seguridad_url</span></div>
+                        <div class="field"><span class="field-normal">created_at</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Relationships Table -->
+            <div class="relationships">
+                <h3>📊 Relaciones entre Entidades</h3>
+                <table class="rel-table">
+                    <thead>
+                        <tr>
+                            <th>Entidad</th>
+                            <th>Relación</th>
+                            <th>Entidad</th>
+                            <th>Descripción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>swell_clientes</td>
+                            <td><span class="rel-type">1:N</span></td>
+                            <td>swell_proyectos</td>
+                            <td>Un cliente tiene muchos proyectos</td>
+                        </tr>
+                        <tr>
+                            <td>swell_proyectos</td>
+                            <td><span class="rel-type">1:N</span></td>
+                            <td>swell_ordenes</td>
+                            <td>Un proyecto tiene muchas órdenes de trabajo</td>
+                        </tr>
+                        <tr>
+                            <td>swell_equipos</td>
+                            <td><span class="rel-type">1:N</span></td>
+                            <td>swell_calibraciones</td>
+                            <td>Un equipo tiene muchas calibraciones</td>
+                        </tr>
+                        <tr>
+                            <td>swell_equipos</td>
+                            <td><span class="rel-type">1:N</span></td>
+                            <td>swell_certificaciones</td>
+                            <td>Un equipo tiene muchas certificaciones</td>
+                        </tr>
+                        <tr>
+                            <td>swell_actividades</td>
+                            <td><span class="rel-type">1:N</span></td>
+                            <td>swell_recursos_asignados</td>
+                            <td>Una actividad tiene muchos recursos asignados</td>
+                        </tr>
+                        <tr>
+                            <td>swell_actividades</td>
+                            <td><span class="rel-type">1:N</span></td>
+                            <td>swell_programacion</td>
+                            <td>Una actividad tiene muchas programaciones</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">21</div>
+                <div class="stat-label">Total Stores</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">14</div>
+                <div class="stat-label">Swell Stores</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">4</div>
+                <div class="stat-label">Report Types</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">6</div>
+                <div class="stat-label">Relationships</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

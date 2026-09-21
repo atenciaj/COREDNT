@@ -1,0 +1,27 @@
+{
+  "name": "aplicacion-reportes",
+  "version": "1.0.0",
+  "description": "",
+  "main": "audit-v2.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "node tests/ndt-save-print-test.js && node tests/ndt-data-entry-test.js && node tests/ndt-forms-test.js",
+    "test:save-print": "node tests/ndt-save-print-test.js",
+    "test:data-entry": "node tests/ndt-data-entry-test.js",
+    "test:forms": "node tests/ndt-forms-test.js",
+    "test:all": "node tests/ndt-save-print-test.js && node tests/ndt-data-entry-test.js && node tests/ndt-forms-test.js",
+    "dev": "npx http-server . -p 8080 -c-1",
+    "start": "npx http-server . -p 8080 -c-1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "playwright": "^1.59.1"
+  }
+}

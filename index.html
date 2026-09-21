@@ -1,0 +1,2713 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CORENDT — Gestión END</title>
+  <meta name="description" content="Sistema de gestión de Ensayos No Destructivos (END) para CORENDT Colombia S.A.S.">
+
+  <!-- Bootstrap 5 -->
+  <link rel="stylesheet" href="vendor/bootstrap/bootstrap.min.css">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="vendor/bootstrap-icons/bootstrap-icons.min.css">
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/simat.css">
+  <link rel="stylesheet" href="css/tree-styles.css">
+  <!-- Service Order Flowchart -->
+  <link rel="stylesheet" href="css/flujo_ordenes.css">
+
+  <!-- html2pdf -->
+  <script src="vendor/html2pdf/html2pdf.bundle.min.js"></script>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0078bf">
+  
+  <script>
+    // En file:// se quita el manifest (evita error CORS) y no se registra SW
+    if (window.location.protocol === 'file:') {
+      document.addEventListener('DOMContentLoaded', function () {
+        var link = document.querySelector('link[rel="manifest"]');
+        if (link) link.parentNode.removeChild(link);
+      });
+    }
+    window.onload = function() {
+      console.log('CORENDT END App Starting...');
+      if (window.location.protocol !== 'file:' && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.register('js/sw.js')
+          .then(reg => console.log('SW Registered'))
+          .catch(err => console.log('SW Failed', err));
+      }
+    };
+  </script>
+</head>
+
+<body>
+
+  <!-- ===== ENTRADA DE IMPACTO (splash CORENDT) ===== -->
+  <div id="app-intro" aria-hidden="true">
+    <div class="intro-celda">
+      <div class="intro-mark">
+        <svg viewBox="0 0 180 180" class="intro-svg" role="presentation">
+          <circle cx="90" cy="90" r="86" fill="none" stroke="#38bdf8" stroke-opacity=".25" stroke-width="2"/>
+          <circle cx="90" cy="90" r="72" fill="none" stroke="#0ea5e9" stroke-opacity=".35" stroke-width="1.5" class="intro-rot"/>
+          <g class="intro-rings">
+            <circle cx="90" cy="90" r="30" fill="none" stroke="#7dd3fc" stroke-width="2"/>
+            <circle cx="90" cy="90" r="52" fill="none" stroke="#38bdf8" stroke-opacity=".6" stroke-width="1.4"/>
+            <circle cx="90" cy="90" r="72" fill="none" stroke="#0ea5e9" stroke-opacity=".4" stroke-width="1"/>
+          </g>
+          <g class="intro-wave" fill="none" stroke="#22d3ee" stroke-linecap="round">
+            <path d="M90 70 q6 7 0 14 M84 70 q-6 7 0 14"/>
+            <path d="M90 96 q7 8 0 16 M83 96 q-7 8 0 16" class="intro-wave2"/>
+          </g>
+          <text x="90" y="148" text-anchor="middle" class="intro-code">INTEGRIDAD · END</text>
+        </svg>
+        <div class="intro-sigla"><span>N</span><span>D</span><span>T</span></div>
+      </div>
+      <h1 class="intro-nombre">CORENDT <b>Colombia S.A.S.</b></h1>
+      <p class="intro-lema">Ensayos No Destructivos · Inspección Mecánica · Soldadura y Calificación</p>
+      <div class="intro-codigos">
+        <span>ASME V</span><span>ASME IX</span><span>API 510</span><span>API 570</span>
+        <span>API 653</span><span>AWS D1.1</span><span>ISO 9712</span><span>NBIC</span>
+      </div>
+      <div class="intro-carga">
+        <div class="intro-carga-track"><div class="intro-carga-fill"></div></div>
+        <span class="intro-carga-txt">Inicializando plataforma de gestión e integridad…</span>
+      </div>
+    </div>
+    <div class="intro-rayo"></div>
+  </div>
+  <script>
+    (function () {
+      var intro = document.getElementById('app-intro');
+      if (!intro) return;
+      var reducido = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var espera = reducido ? 600 : 2500;
+      var salida = reducido ? 500 : 1500;
+      var html = document.documentElement;
+      html.classList.add('intro-lock');
+      window.addEventListener('load', function () {
+        setTimeout(function () { intro.classList.add('intro-out'); html.classList.remove('intro-lock'); }, espera);
+        setTimeout(function () { if (intro.parentNode) intro.parentNode.removeChild(intro); }, espera + salida + 300);
+      });
+      // Red de seguridad por si 'load' ya ocurrió antes del listener
+      if (document.readyState === 'complete') {
+        setTimeout(function () { intro.classList.add('intro-out'); html.classList.remove('intro-lock'); }, espera);
+        setTimeout(function () { if (intro.parentNode) intro.parentNode.removeChild(intro); }, espera + salida + 300);
+      }
+    })();
+  </script>
+
+  <!-- Datalists for Material Suggestions -->
+  <datalist id="dl-penetrante">
+    <option value="SKL-WP2 (Líquido)">
+    <option value="SKL-WP2-AEROSOL">
+    <option value="SKL-2C">
+    <option value="Magnaflux Penetrante">
+  </datalist>
+  <datalist id="dl-limpiador">
+    <option value="SKC-S AEROSOL">
+    <option value="SKC-S (Líquido)">
+    <option value="Limpiador General">
+  </datalist>
+  <datalist id="dl-revelador">
+    <option value="SKD-S2">
+    <option value="SKD-S2 AEROSOL">
+    <option value="Magnaflux Revelador">
+  </datalist>
+  <datalist id="dl-emulsificante">
+    <option value="N/A">
+    <option value="SK-EM">
+  </datalist>
+  <datalist id="dl-acoplante">
+    <option value="Sonogel">
+    <option value="Gel">
+    <option value="Aceite">
+    <option value="Agua">
+  </datalist>
+  <datalist id="dl-actividad">
+    <option value="Inspección">
+    <option value="Mantenimiento">
+    <option value="Fabricación">
+    <option value="Reparación">
+  </datalist>
+  <datalist id="dl-duracion">
+    <option value="5 min">
+    <option value="10 min">
+    <option value="15 min">
+    <option value="20 min">
+    <option value="30 min">
+    <option value="60 min">
+  </datalist>
+  <datalist id="dl-metodo">
+    <option value="C (Removible con solvente)">
+    <option value="A (Lavable con agua)">
+    <option value="B (Emulsificante lipofílico)">
+    <option value="D (Emulsificante hidrofílico)">
+  </datalist>
+  <datalist id="dl-temperatura">
+    <option value="Ambiente">
+    <option value="10°C - 38°C">
+    <option value="5°C - 52°C">
+  </datalist>
+    <datalist id="dl-iluminacion">
+      <option value="> 1000 Lux">
+      <option value="> 500 Lux">
+      <option value="Natural">
+      <option value="Artificial">
+    </datalist>
+
+    <!-- Tree DataList for Equipment, Mechanism, Part, Activity -->
+    <datalist id="dl-equipos"></datalist>
+    <datalist id="dl-mecanismos"></datalist>
+    <datalist id="dl-partes"></datalist>
+    <datalist id="dl-actividades"></datalist>
+
+    <!-- Navbar -->
+  <nav class="app-navbar navbar navbar-expand-lg navbar-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center" href="#">
+        <div class="brand-icon-wrapper me-2">
+          <i class="bi bi-shield-check"></i>
+        </div>
+        <div class="brand-text">
+          <span class="fw-bold">CORENDT</span>
+          <span class="brand-tag">Colombia S.A.S.</span>
+        </div>
+      </a>
+      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <i class="bi bi-list fs-2"></i>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link active" href="#" data-section="dashboard">
+              <i class="bi bi-grid-1x2-fill me-1"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-section="reportes">
+              <i class="bi bi-clipboard2-data-fill me-1"></i> Reportes
+            </a>
+          </li>
+<li class="nav-item dropdown">
+<a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+<i class="bi bi-gear-wide-connected me-1"></i> Gestión
+</a>
+<ul class="dropdown-menu dropdown-menu-dark shadow-lg border-0">
+<li><a class="dropdown-item" href="#" data-section="clientes"><i class="bi bi-person-circle me-2"></i>Clientes</a></li>
+<li><a class="dropdown-item" href="#" data-section="visitas"><i class="bi bi-calendar-check me-2"></i>Visitas y Seguimiento</a></li>
+<li><a class="dropdown-item" href="#" data-section="propuestas"><i class="bi bi-file-earmark-text me-2"></i>Propuestas y Ofertas</a></li>
+<li><a class="dropdown-item" href="#" data-section="ordenes"><i class="bi bi-briefcase me-2"></i>Órdenes de Trabajo</a></li>
+<li><hr class="dropdown-divider opacity-10"></li>
+<li><a class="dropdown-item" href="#" data-section="equipos"><i class="bi bi-cpu me-2"></i>Equipos NDT</a></li>
+<li><a class="dropdown-item" href="#" data-section="calibraciones"><i class="bi bi-calendar-check me-2"></i>Calibraciones</a></li>
+<li><a class="dropdown-item" href="#" data-section="tarifario"><i class="bi bi-cash-coin me-2"></i>Tarifario / AIU</a></li>
+<li><a class="dropdown-item" href="#" data-section="documentacion"><i class="bi bi-file-earmark-medical me-2"></i>Documentación / Lista Maestra</a></li>
+<li><hr class="dropdown-divider opacity-10"></li>
+<li><a class="dropdown-item" href="#" onclick="appTools.exportDB()"><i class="bi bi-download me-2"></i>Exportar DB</a></li>
+<li><a class="dropdown-item" href="#" onclick="document.getElementById('db-import-input').click()"><i class="bi bi-upload me-2"></i>Importar DB</a></li>
+</ul>
+</li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-section="indicadores">
+              <i class="bi bi-graph-up-arrow me-1"></i> Indicadores
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-section="personal">
+              <i class="bi bi-people me-1"></i> Personal y HSE
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-section="certificaciones">
+              <i class="bi bi-award me-1"></i> Certificaciones
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-section="hse">
+              <i class="bi bi-shield-check me-1"></i> HSE / SST
+            </a>
+          </li>
+        </ul>
+        <div class="d-flex align-items-center gap-3">
+          <div id="sync-indicator" class="sync-status-badge">
+            <span class="badge bg-secondary-subtle text-secondary border border-secondary">
+              <i class="bi bi-cloud-slash"></i> Offline
+            </span>
+          </div>
+          <button class="btn btn-gold btn-sm px-3" onclick="App.handleNuevo()">
+            <i class="bi bi-plus-lg me-1"></i> Nuevo Reporte
+          </button>
+          <div class="vr mx-2 text-white opacity-25"></div>
+          <button class="btn btn-outline-light btn-sm border-0" onclick="appTools.exportDB()" title="Backup Local (JSON)">
+            <i class="bi bi-cloud-arrow-up fs-5"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container-fluid py-4">
+    
+    <!-- Dashboard Section -->
+    <section id="section-dashboard" class="content-section">
+      <h2 class="mb-4"><i class="bi bi-speedometer2 me-2"></i>Dashboard</h2>
+      <div id="dashboard-container"></div>
+    </section>
+
+  <!-- SIMAT Section -->
+  <section id="section-simat" class="content-section d-none">
+    <div id="simat-container"></div>
+  </section>
+
+<!-- Tree Viewer Section -->
+<section id="section-tree-viewer" class="content-section d-none">
+  <div id="tree-viewer-container"></div>
+</section>
+
+<!-- Integrity Management Section -->
+<section id="section-integridad" class="content-section d-none">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-4">
+        <div id="arbol-integridad"></div>
+      </div>
+      <div class="col-md-8">
+        <div id="detalle-componente">
+          <div class="text-center text-muted py-5">
+            <i class="bi bi-diagram-3" style="font-size: 3rem;"></i>
+            <h4 class="mt-3">Gestión de Integridad SIMAT</h4>
+            <p>Seleccione un componente del árbol para ver su estado de integridad</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PT Form Section -->
+    <section id="section-pt" class="content-section d-none">
+      <div id="pt-form-container">
+        <div id="panel-pt" class="report-panel">
+          <div class="report-header">
+            <div class="rh-logo-block">
+              <div class="rh-brand-logo-container" id="pt-header-logo-container">
+                <img id="pt-header-logo-img" style="max-height:50px; display:none;" class="mb-1">
+                <div id="pt-default-logo" style="display:flex; align-items:center; gap:3px;">
+                  <span class="cr-logo" style="font-weight:700; font-size:1.25rem; color:var(--cr-blue);">CORENDT</span>
+                  <span class="cr-tag" style="font-size:0.6rem; background:var(--cr-gold); color:#000; padding:0.1rem 0.3rem; border-radius:3px; font-weight:600;">COLOMBIA S.A.S.</span>
+                </div>
+              </div>
+              <div class="cr-brand-sub" id="pt-brand-sub">Ensayos No Destructivos</div>
+            </div>
+            <div class="rh-title"><h2>REPORTE TINTAS PENETRANTES</h2></div>
+            <div class="rh-meta">
+              <table>
+                <tr><td>Código:</td><td>COR-PT-0001</td></tr>
+                <tr><td>Versión:</td><td>01</td></tr>
+                <tr><td>Fecha:</td><td>09/09/2026</td></tr>
+              </table>
+            </div>
+          </div>
+          <!-- Status Bar Visual -->
+          <div id="pt-status-bar" class="status-bar-premium mb-3">
+            <div>
+              <i class="bi bi-file-earmark-diff me-2 text-primary"></i>
+              <strong>MODO:</strong> <span id="pt-mode-text" class="badge bg-gold text-dark ms-1">NUEVO REPORTE</span>
+            </div>
+            <div id="pt-last-save" class="text-muted small">
+              <i class="bi bi-clock-history me-1"></i> No guardado aún
+            </div>
+          </div>
+
+<div class="d-flex gap-2 mb-3 report-actions">
+<button id="btn-save-pt" class="btn btn-gold px-4 fw-bold"><i class="bi bi-save me-2"></i>Guardar</button>
+<button id="btn-print-pt" class="btn btn-outline-primary"><i class="bi bi-printer me-2"></i>Imprimir</button>
+<button id="btn-pdf-pt" class="btn btn-outline-secondary" onclick="window.NDT.pdf.generatePDF('pt')"><i class="bi bi-file-pdf me-2"></i>PDF</button>
+<button id="btn-word-pt" class="btn btn-outline-secondary" onclick="window.NDT.pdf.exportWord('pt')"><i class="bi bi-file-word me-2"></i>Word</button>
+<button id="btn-import-pdf-pt" class="btn btn-outline-success" onclick="document.getElementById('pt-pdf-import-input').click()"><i class="bi bi-upload me-2"></i>Importar PDF</button>
+<input type="file" id="pt-pdf-import-input" accept="application/pdf" style="display:none;" onchange="handlePTPDFImport(event)">
+<input type="file" id="db-import-input" accept="application/json" style="display:none;" onchange="handleDBImport(event)">
+</div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">A. Información General</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <table class="print-table mb-0" style="table-layout: fixed;">
+                <tr>
+                  <th style="width: 15%;">N° Reporte</th>
+                  <td style="width: 35%;"><input type="text" id="pt-report-number" class="form-control form-report-number" readonly></td>
+                  <th style="width: 15%;">Fecha Ejecución</th>
+                  <td style="width: 35%;"><input type="date" id="pt-fecha-ejecucion" class="form-control"></td>
+                </tr>
+                <tr>
+                  <th>Cliente</th>
+                  <td><input type="text" id="pt-cliente" class="form-control" autocomplete="off"></td>
+                  <th>Fecha Reporte</th>
+                  <td><input type="date" id="pt-fecha-reporte" class="form-control"></td>
+                </tr>
+<tr>
+<th>Orden de Trabajo</th>
+<td colspan="3">
+<div class="input-group">
+<input type="hidden" id="pt-ot-id">
+<input type="text" id="pt-ot-codigo" class="form-control" list="pt-ot-list" placeholder="Escriba código o seleccione orden..." readonly>
+<button class="btn btn-outline-primary" type="button" onclick="window.NDT.Ordenes && window.NDT.Ordenes.abrirBuscadorOrdenes('pt')" title="Buscar orden">
+<i class="bi bi-search"></i>
+</button>
+<button class="btn btn-outline-secondary" type="button" onclick="window.NDT.Ordenes.limpiarOrdenPT()" title="Limpiar">
+<i class="bi bi-x-circle"></i>
+</button>
+</div>
+<datalist id="pt-ot-list"></datalist>
+<div id="pt-ot-info" class="form-text text-primary mt-1" style="display:none;">
+<i class="bi bi-info-circle me-1"></i><span id="pt-ot-info-text"></span>
+</div>
+</td>
+</tr>
+                <tr>
+                  <th>Proyecto/Lugar</th>
+                  <td><input type="text" id="pt-lugar" class="form-control" autocomplete="off"></td>
+                  <th>Equipo</th>
+                  <td><input type="text" id="pt-equipo" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Componente</th>
+                  <td><input type="text" id="pt-identificacion" class="form-control" autocomplete="off"></td>
+                  <th>Procedimiento</th>
+                  <td><input type="text" id="pt-procedimiento" class="form-control procedimiento-field" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Criterio de Evaluación</th>
+                  <td><input type="text" id="pt-criterio" class="form-control" autocomplete="off"></td>
+                  <th>Norma Aplicable</th>
+                  <td><input type="text" id="pt-norma" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Hora Inicio</th>
+                  <td><input type="time" id="pt-hora-inicio" class="form-control"></td>
+                  <th>Hora Fin</th>
+                  <td><input type="time" id="pt-hora-fin" class="form-control"></td>
+                </tr>
+                <tr>
+                  <th>Cédula Inspector</th>
+                  <td><input type="text" id="pt-cedula-inspector" class="form-control" placeholder="ej: 12345678"></td>
+                  <th>Cédula Supervisor</th>
+                  <td><input type="text" id="pt-cedula-supervisor" class="form-control" placeholder="ej: 87654321"></td>
+                </tr>
+                <tr>
+                  <th>Estado</th>
+                  <td>
+                    <select id="pt-estado" class="form-select">
+                      <option value="Borrador">Borrador</option>
+                      <option value="Completo">Completo</option>
+                      <option value="Aprobado">Aprobado</option>
+                    </select>
+                  </td>
+                  <th>N° Indicaciones</th>
+                  <td><input type="number" id="pt-numero-indicaciones" class="form-control" min="0" value="0"></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">B. Materiales y Variables</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body p-3">
+              <div id="pt-vista-general-annex" class="mb-3">
+                <div class="photo-dropzone"><strong>Fotos Vista General</strong><input type="file" class="photo-file-input d-none" accept="image/*" multiple></div>
+                <div class="photo-grid" id="pt-vista-general-grid"></div>
+                <div class="mt-3 border-2 border-dark" style="border: 2px solid #222;">
+                  <div class="var-header" style="background:#0078bf; color:#000; font-weight:bold; padding:4px 8px; border-bottom:1px solid #222;">DESCRIPCIÓN VISTA GENERAL</div>
+                  <textarea id="pt-vista-general-comentario" class="form-control border-0 rounded-0" rows="2" style="resize:none;">VISTA GENERAL DEL COMPONENTE EXAMINADO: </textarea>
+                </div>
+              </div>
+              <table class="print-table mb-0">
+                <tr>
+                  <th colspan="4" class="text-center" style="background:#d9e2e6">1. MATERIALES Y EQUIPOS</th>
+                  <th colspan="2" class="text-center" style="background:#d9e2e6">2. VARIABLES DE EXAMINACIÓN</th>
+                </tr>
+                <tr>
+                  <th style="width: 15%">Producto</th><th style="width: 2%">Marca</th><th style="width: 2%">Lote</th><th style="width: 2%">Venc.</th>
+                  <th style="width: 30%" class="text-start">Actividad</th>
+                  <td><input type="text" id="pt-actividad" class="form-control" list="dl-actividad"></td>
+                </tr>
+                <tr>
+                  <th>Penetrante</th>
+                  <td><input type="text" id="pt-penetrante-marca" class="form-control" list="dl-penetrante"></td>
+                  <td><input type="text" id="pt-penetrante-lote" class="form-control"></td>
+                  <td><input type="date" id="pt-penetrante-venc" class="form-control"></td>
+                  <th>Duración</th>
+                  <td><input type="text" id="pt-duracion" class="form-control" list="dl-duracion"></td>
+                </tr>
+                <tr>
+                  <th>Limpiador</th>
+                  <td><input type="text" id="pt-limpiador-marca" class="form-control" list="dl-limpiador"></td>
+                  <td><input type="text" id="pt-limpiador-lote" class="form-control"></td>
+                  <td><input type="date" id="pt-limpiador-venc" class="form-control"></td>
+                  <th>Método</th>
+                  <td><input type="text" id="pt-metodo" class="form-control" list="dl-metodo"></td>
+                </tr>
+                <tr>
+                  <th>Revelador</th>
+                  <td><input type="text" id="pt-revelador-marca" class="form-control" list="dl-revelador"></td>
+                  <td><input type="text" id="pt-revelador-lote" class="form-control"></td>
+                  <td><input type="date" id="pt-revelador-venc" class="form-control"></td>
+                  <th>Temperatura</th>
+                  <td><input type="text" id="pt-temp" class="form-control" list="dl-temperatura"></td>
+                </tr>
+                <tr>
+                  <th colspan="4" style="background:transparent; border:none; border-right:1px solid var(--cr-border);"></th>
+                  <th>Iluminación</th>
+                  <td><input type="text" id="pt-iluminacion" class="form-control" list="dl-iluminacion"></td>
+                </tr>
+                <tr>
+                  <th colspan="4" style="background:transparent; border:none; border-right:1px solid var(--cr-border);"></th>
+                  <th>Tipo de Luz</th>
+                  <td>
+                    </select>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <!-- Panel de Evaluación Especializada (PT) -->
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">B.2. Evaluación Especializada (API/ASME)</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body p-3">
+              <div class="row g-2">
+                <div class="col-md-3">
+                  <label class="form-label text-xs">P: Presión (PSI)</label>
+                  <input type="number" id="pt-eval-p" class="form-control form-control-sm border-primary" placeholder="Ej: 150">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label text-xs">D: Diámetro (In)</label>
+                  <input type="number" id="pt-eval-d" class="form-control form-control-sm border-primary" placeholder="Ej: 8.625">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label text-xs">S: Esfuerzo Admisible</label>
+                  <input type="number" id="pt-eval-s" class="form-control form-control-sm border-primary" placeholder="Ej: 20000">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label text-xs">E: Eficiencia Junta</label>
+                  <input type="number" id="pt-eval-e" class="form-control form-control-sm border-primary" value="1.0">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label text-xs">CA: Tolerancia Corrosión</label>
+                  <input type="number" id="pt-eval-ca" class="form-control form-control-sm border-primary" value="1.6">
+                </div>
+                <div class="col-md-8">
+                  <label class="form-label text-xs">Observación de Diseño</label>
+                  <input type="text" id="pt-eval-obs" class="form-control form-control-sm" placeholder="Contexto de integridad...">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">B.3. Vista General del Componente</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body" id="pt-vista-general-annex">
+              <div class="resize-container" style="resize: vertical; overflow: auto; min-height: 100px; max-height: 400px; border: 1px dashed #ccc; padding: 5px;">
+                <div class="vista-general-photos" id="pt-vista-general-photos"></div>
+              </div>
+              <div class="text-center mt-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" id="pt-add-vista-general-photo" onclick="document.getElementById('pt-vista-general-file').click()">
+                  <i class="bi bi-plus-circle"></i> Agregar Foto (max 2)
+                </button>
+                <input type="file" id="pt-vista-general-file" class="d-none" accept="image/*" multiple onchange="handleVistaGeneralPhotos('pt', this)">
+              </div>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">C. Resultados</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <div class="resize-container-results" style="resize: vertical; overflow: auto; min-height: 80px; max-height: 400px;">
+                <div class="table-responsive">
+                  <table class="ndt-table">
+                    <thead>
+                      <tr>
+                        <th rowspan="2">Junta / parte</th>
+                        <th rowspan="2">Estampe del soldador</th>
+                        <th rowspan="2">Espesor</th>
+                        <th rowspan="2">Tipo de indicación</th>
+                        <th rowspan="2">Caracterización</th>
+                        <th colspan="2">Resultado de evaluación</th>
+                        <th rowspan="2" style="width: 40px;"></th>
+                      </tr>
+                      <tr>
+                        <th style="width: 80px;">Aceptado</th>
+                        <th style="width: 80px;">Rechazado</th>
+                      </tr>
+                    </thead>
+                    <tbody id="pt-results-body"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="mt-2 d-flex justify-content-end">
+                <button class="btn btn-sm btn-outline-primary" id="btn-add-row-pt"><i class="bi bi-plus-circle"></i> Adicionar Fila</button>
+              </div>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">D. Observaciones</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <textarea id="pt-observaciones" class="form-control" rows="5" style="width:100%;"></textarea>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">E. Anexo Fotográfico</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body" id="pt-photo-annex">
+              <div class="resize-container">
+                <div class="anexo-photos" id="pt-anexo-photos"></div>
+              </div>
+              <div class="text-center mt-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('pt-anexo-file').click()">
+                  <i class="bi bi-plus-circle"></i> Agregar Foto
+                </button>
+                <input type="file" id="pt-anexo-file" class="d-none" accept="image/*" multiple onchange="handleAnexoPhotos('pt', this)">
+              </div>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">F. Firmas</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <table class="table-signatures mb-0">
+                <tr>
+                  <th style="width: 33%; text-align: center;">Elaboró</th>
+                  <th style="width: 33%; text-align: center;">Revisó</th>
+                  <th style="width: 33%; text-align: center;">Aprobó</th>
+                </tr>
+                <tr>
+                  <td style="vertical-align: top;">
+                    <div class="signature-container mb-1">
+                      <img id="pt-img-elaboro" class="signature-img" style="max-height: 60px; display: none;">
+                    </div>
+                    <input type="text" id="pt-firma-elaboro" class="form-control text-center text-center-print mb-1" value="Nayith Morales Rua - nivel II Líquidos Penetrantes" list="dl-firmantes">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('pt-file-elaboro').click()">
+                      <i class="bi bi-upload"></i> Subir Firma
+                    </button>
+                    <input type="file" id="pt-file-elaboro" class="d-none" accept="image/*" onchange="loadSignature(this, 'pt-img-elaboro')">
+                  </td>
+                  <td style="vertical-align: top;">
+                    <div class="signature-container mb-1">
+                      <img id="pt-img-reviso" class="signature-img" style="max-height: 60px; display: none;">
+                    </div>
+                    <input type="text" id="pt-firma-reviso" class="form-control text-center text-center-print mb-1" value="Carlos Aníbal Ortiz - Director Técnico" list="dl-firmantes">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('pt-file-reviso').click()">
+                      <i class="bi bi-upload"></i> Subir Firma
+                    </button>
+                    <input type="file" id="pt-file-reviso" class="d-none" accept="image/*" onchange="loadSignature(this, 'pt-img-reviso')">
+                  </td>
+                  <td style="vertical-align: top;">
+                    <div class="signature-container mb-1">
+                      <img id="pt-img-aprobo" class="signature-img" style="max-height: 60px; display: none;">
+                    </div>
+                    <input type="text" id="pt-firma-aprobo" class="form-control text-center text-center-print mb-1" list="dl-firmantes">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('pt-file-aprobo').click()">
+                      <i class="bi bi-upload"></i> Subir Firma
+                    </button>
+                    <input type="file" id="pt-file-aprobo" class="d-none" accept="image/*" onchange="loadSignature(this, 'pt-img-aprobo')">
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MT Form Section -->
+    <section id="section-mt" class="content-section d-none">
+      <div id="mt-form-container">
+        <div id="panel-mt" class="report-panel">
+          <div class="report-header">
+            <div class="rh-logo-block">
+              <div class="rh-brand-logo-container" id="mt-header-logo-container">
+                <img id="mt-header-logo-img" style="max-height:50px; display:none;" class="mb-1">
+                <div id="mt-default-logo" style="display:flex; align-items:center; gap:3px;">
+                  <span class="cr-logo" style="font-weight:700; font-size:1.25rem; color:var(--cr-blue);">CORENDT</span>
+                  <span class="cr-tag" style="font-size:0.6rem; background:var(--cr-gold); color:#000; padding:0.1rem 0.3rem; border-radius:3px; font-weight:600;">COLOMBIA S.A.S.</span>
+                </div>
+              </div>
+              <div class="cr-brand-sub" id="mt-brand-sub">Ensayos No Destructivos</div>
+            </div>
+            <div class="rh-title"><h2>REPORTE PARTÍCULAS MAGNÉTICAS</h2></div>
+            <div class="rh-meta">
+              <table>
+                <tr><td>Código:</td><td>COR-MT-0001</td></tr>
+                <tr><td>Versión:</td><td>01</td></tr>
+                <tr><td>Fecha:</td><td>09/09/2026</td></tr>
+              </table>
+            </div>
+          </div>
+          <!-- Status Bar Visual -->
+          <div id="mt-status-bar" class="status-bar-premium mb-3">
+            <div>
+              <i class="bi bi-file-earmark-diff me-2 text-primary"></i>
+              <strong>MODO:</strong> <span id="mt-mode-text" class="badge bg-gold text-dark ms-1">NUEVO REPORTE</span>
+            </div>
+            <div id="mt-last-save" class="text-muted small">
+              <i class="bi bi-clock-history me-1"></i> No guardado aún
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mb-3 report-actions">
+            <button id="btn-save-mt" class="btn btn-gold px-4 fw-bold"><i class="bi bi-save me-2"></i>Guardar</button>
+            <button id="btn-print-mt" class="btn btn-outline-primary"><i class="bi bi-printer me-2"></i>Imprimir</button>
+            <button id="btn-pdf-mt" class="btn btn-outline-secondary" onclick="window.NDT.pdf.generatePDF('mt')"><i class="bi bi-file-pdf me-2"></i>PDF</button>
+            <button id="btn-word-mt" class="btn btn-outline-secondary" onclick="window.NDT.pdf.exportWord('mt')"><i class="bi bi-file-word me-2"></i>Word</button>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">A. Información General</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <table class="print-table mb-0" style="table-layout: fixed;">
+                <tr>
+                  <th style="width: 20%;">N° Reporte</th>
+                  <td style="width: 30%;"><input type="text" id="mt-report-number" class="form-control form-report-number" readonly></td>
+                  <th style="width: 20%;">Fecha Ejecución</th>
+                  <td style="width: 30%;"><input type="date" id="mt-fecha-ejecucion" class="form-control"></td>
+                </tr>
+                <tr>
+                  <th>Cliente</th>
+                  <td><input type="text" id="mt-cliente" class="form-control" autocomplete="off"></td>
+                  <th>Fecha Reporte</th>
+                  <td><input type="date" id="mt-fecha-reporte" class="form-control"></td>
+                </tr>
+<tr>
+<th>Orden de Trabajo</th>
+<td colspan="3">
+<div class="input-group">
+<input type="hidden" id="mt-ot-id">
+<input type="text" id="mt-ot-codigo" class="form-control" list="mt-ot-list" placeholder="Escriba código o seleccione orden..." readonly>
+<button class="btn btn-outline-primary" type="button" onclick="window.NDT.Ordenes && window.NDT.Ordenes.abrirBuscadorOrdenes('mt')" title="Buscar orden">
+<i class="bi bi-search"></i>
+</button>
+<button class="btn btn-outline-secondary" type="button" onclick="window.NDT.Ordenes.limpiarOrdenMT()" title="Limpiar">
+<i class="bi bi-x-circle"></i>
+</button>
+</div>
+<datalist id="mt-ot-list"></datalist>
+<div id="mt-ot-info" class="form-text text-primary mt-1" style="display:none;">
+<i class="bi bi-info-circle me-1"></i><span id="mt-ot-info-text"></span>
+</div>
+</td>
+</tr>
+                <tr>
+                  <th>Proyecto/Lugar</th>
+                  <td><input type="text" id="mt-lugar" class="form-control" autocomplete="off"></td>
+                  <th>Equipo</th>
+                  <td><input type="text" id="mt-equipo" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Componente</th>
+                  <td><input type="text" id="mt-identificacion" class="form-control" autocomplete="off"></td>
+                  <th>Sistema</th>
+                  <td><input type="text" id="mt-sistema" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Procedimiento</th>
+                  <td><input type="text" id="mt-procedimiento" class="form-control procedimiento-field" autocomplete="off"></td>
+                  <th>Criterio de Evaluación</th>
+                  <td><input type="text" id="mt-criterio" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Norma Aplicable</th>
+                  <td colspan="3"><input type="text" id="mt-norma" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Hora Inicio</th>
+                  <td><input type="time" id="mt-hora-inicio" class="form-control"></td>
+                  <th>Hora Fin</th>
+                  <td><input type="time" id="mt-hora-fin" class="form-control"></td>
+                </tr>
+                <tr>
+                  <th>Cédula Inspector</th>
+                  <td><input type="text" id="mt-cedula-inspector" class="form-control" placeholder="ej: 12345678"></td>
+                  <th>Cédula Supervisor</th>
+                  <td><input type="text" id="mt-cedula-supervisor" class="form-control" placeholder="ej: 87654321"></td>
+                </tr>
+                <tr>
+                  <th>Estado</th>
+                  <td>
+                    <select id="mt-estado" class="form-select">
+                      <option value="Borrador">Borrador</option>
+                      <option value="Completo">Completo</option>
+                      <option value="Aprobado">Aprobado</option>
+                    </select>
+                  </td>
+                  <th> Método Magnetización</th>
+                  <td><input type="text" id="mt-metodo-magnetizacion" class="form-control" placeholder="ej: Yoke"></td>
+                </tr>
+                <tr>
+                  <th>Amperaje</th>
+                  <td><input type="text" id="mt-amperaje" class="form-control" placeholder="ej: 1500A"></td>
+                  <th>N° Indicaciones</th>
+                  <td><input type="number" id="mt-numero-indicaciones" class="form-control" min="0" value="0"></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">B. Variables de Examinación</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body p-3">
+              <div class="section-card mb-3">
+                <button class="section-toggle" type="button"><span class="section-label">B.1. Vista General del Componente</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+                <div class="section-body" id="mt-vista-general-annex">
+                  <div class="resize-container" style="resize: vertical; overflow: auto; min-height: 100px; max-height: 400px; border: 1px dashed #ccc; padding: 5px;">
+                    <div class="vista-general-photos" id="mt-vista-general-photos"></div>
+                  </div>
+                  <div class="text-center mt-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="mt-add-vista-general-photo" onclick="document.getElementById('mt-vista-general-file').click()">
+                      <i class="bi bi-plus-circle"></i> Agregar Foto (max 2)
+                    </button>
+                    <input type="file" id="mt-vista-general-file" class="d-none" accept="image/*" multiple onchange="handleVistaGeneralPhotos('mt', this)">
+                  </div>
+                </div>
+              </div>
+              <table class="print-table mb-0" style="table-layout: fixed;">
+                <tr>
+                  <td class="var-grid-col" style="width: 33.33%; vertical-align: top; padding: 0;">
+                    <div class="var-header">Técnica de Magnetización</div>
+                    <table class="var-table">
+                      <tr onclick="this.querySelector('input').click()"><td>YOKE</td><td class="var-check"><input type="radio" id="mt-var-tec-1" name="mt-tecnica" value="YOKE"><span></span></td></tr>
+                      <tr onclick="this.querySelector('input').click()"><td>ELECTRODOS</td><td class="var-check"><input type="radio" id="mt-var-tec-2" name="mt-tecnica" value="ELECTRODOS"><span></span></td></tr>
+                      <tr onclick="this.querySelector('input').click()"><td>BOBINA</td><td class="var-check"><input type="radio" id="mt-var-tec-3" name="mt-tecnica" value="BOBINA"><span></span></td></tr>
+                      <tr onclick="this.querySelector('input').click()"><td>CABEZALES</td><td class="var-check"><input type="radio" id="mt-var-tec-4" name="mt-tecnica" value="CABEZALES"><span></span></td></tr>
+                      <tr onclick="this.querySelector('input').click()"><td>BARRA CONDUCTORA</td><td class="var-check"><input type="radio" id="mt-var-tec-5" name="mt-tecnica" value="BARRA CONDUCTORA"><span></span></td></tr>
+                    </table>
+                  </td>
+                  <td class="var-grid-col" style="width: 33.33%; vertical-align: top; padding: 0;">
+                    <div class="var-header">Método de Magnetización</div>
+                    <table class="var-table">
+                      <tr onclick="this.querySelector('input').click()"><td>CONTINUA</td><td class="var-check"><input type="radio" id="mt-var-met-1" name="mt-metodo" value="CONTINUA"><span></span></td></tr>
+                      <tr onclick="this.querySelector('input').click()"><td>RESIDUAL</td><td class="var-check"><input type="radio" id="mt-var-met-2" name="mt-metodo" value="RESIDUAL"><span></span></td></tr>
+                    </table>
+                    <div class="var-header var-header-border-top">Preparación de Superficie</div>
+                    <table class="var-table">
+                      <tr onclick="this.querySelector('input').click()"><td>MANUAL CON GRATA</td><td class="var-check"><input type="radio" id="mt-var-pre-1" name="mt-preparacion" value="MANUAL CON GRATA"><span></span></td></tr>
+                      <tr onclick="this.querySelector('input').click()"><td>MECÁNICA CON GRATA</td><td class="var-check"><input type="radio" id="mt-var-pre-2" name="mt-preparacion" value="MECÁNICA CON GRATA"><span></span></td></tr>
+                      <tr onclick="this.querySelector('input').click()"><td>MANUAL, TRAPO Y SOLVENTE</td><td class="var-check"><input type="radio" id="mt-var-pre-3" name="mt-preparacion" value="MANUAL, TRAPO Y SOLVENTE"><span></span></td></tr>
+                    </table>
+                  </td>
+                  <td class="var-grid-col" style="width: 33.33%; vertical-align: top; padding: 0;">
+                    <div class="var-header">Tipo de Partículas</div>
+                    <table class="var-table">
+                      <tr onclick="this.querySelector('input').click()"><td style="font-size: 10px;">HÚMEDAS FLUORESCENTES</td><td class="var-check"><input type="radio" id="mt-var-par-1" name="mt-particulas" value="HÚMEDAS FLUORESCENTES"><span></span></td></tr>
+                      <tr onclick="this.querySelector('input').click()"><td style="font-size: 10px;">HÚMEDAS LUZ DÍA</td><td class="var-check"><input type="radio" id="mt-var-par-2" name="mt-particulas" value="HÚMEDAS LUZ DÍA"><span></span></td></tr>
+                      <tr onclick="this.querySelector('input').click()"><td style="font-size: 10px;">SECAS FLUORESCENTES</td><td class="var-check"><input type="radio" id="mt-var-par-3" name="mt-particulas" value="SECAS FLUORESCENTES"><span></span></td></tr>
+                      <tr onclick="this.querySelector('input').click()"><td style="font-size: 10px;">SECAS LUZ DÍA</td><td class="var-check"><input type="radio" id="mt-var-par-4" name="mt-particulas" value="SECAS LUZ DÍA"><span></span></td></tr>
+                    </table>
+                    <div class="var-header var-header-border-top">Tipo de Corriente</div>
+                    <table class="var-table">
+                      <tr onclick="this.querySelector('input').click()"><td>DC</td><td class="var-check"><input type="radio" id="mt-var-cor-1" name="mt-corriente" value="DC"><span></span></td></tr>
+                      <tr onclick="this.querySelector('input').click()"><td>AC</td><td class="var-check"><input type="radio" id="mt-var-cor-2" name="mt-corriente" value="AC"><span></span></td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <!-- Panel de Evaluación Especializada (MT) -->
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">B.2. Evaluación Especializada (API/ASME)</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body p-3">
+              <div class="row g-2">
+                <div class="col-md-3">
+                  <label class="form-label text-xs">P: Presión (PSI)</label>
+                  <input type="number" id="mt-eval-p" class="form-control form-control-sm border-primary" placeholder="Ej: 250">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label text-xs">D: Diámetro (In)</label>
+                  <input type="number" id="mt-eval-d" class="form-control form-control-sm border-primary" placeholder="Ej: 12.75">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label text-xs">S: Esfuerzo Admisible</label>
+                  <input type="number" id="mt-eval-s" class="form-control form-control-sm border-primary" placeholder="Ej: 17100">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label text-xs">E: Eficiencia Junta</label>
+                  <input type="number" id="mt-eval-e" class="form-control form-control-sm border-primary" value="0.85">
+                </div>
+                <div class="col-md-12">
+                  <label class="form-label text-xs">Nota de Integridad Mecánica</label>
+                  <input type="text" id="mt-eval-note" class="form-control form-control-sm" placeholder="Detalles de integridad...">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">C. Resultados</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <div class="resize-container-results" style="resize: vertical; overflow: auto; min-height: 80px; max-height: 400px;">
+                <div class="table-responsive">
+                  <table class="ndt-table">
+                    <thead>
+                      <tr>
+                        <th rowspan="2">Junta / parte</th>
+                        <th rowspan="2">Estampe del soldador</th>
+                        <th rowspan="2">Espesor</th>
+                        <th rowspan="2">Tipo de indicación</th>
+                        <th rowspan="2">Caracterización</th>
+                        <th colspan="2">Resultado de evaluación</th>
+                        <th rowspan="2" style="width: 40px;"></th>
+                      </tr>
+                      <tr>
+                        <th style="width: 80px;">Aceptado</th>
+                        <th style="width: 80px;">Rechazado</th>
+                      </tr>
+                    </thead>
+                    <tbody id="mt-results-body"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="mt-2 d-flex justify-content-end">
+                <button class="btn btn-sm btn-outline-primary" id="btn-add-row-mt"><i class="bi bi-plus-circle"></i> Adicionar Fila</button>
+              </div>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">D. Observaciones</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <textarea id="mt-observaciones" class="form-control" rows="5" style="width:100%;"></textarea>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">E. Anexo Fotográfico</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body" id="mt-photo-annex">
+              <div class="resize-container">
+                <div class="anexo-photos" id="mt-anexo-photos"></div>
+              </div>
+              <div class="text-center mt-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('mt-anexo-file').click()">
+                  <i class="bi bi-plus-circle"></i> Agregar Foto
+                </button>
+                <input type="file" id="mt-anexo-file" class="d-none" accept="image/*" multiple onchange="handleAnexoPhotos('mt', this)">
+              </div>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">F. Firmas</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <table class="table-signatures mb-0">
+                <tr>
+                  <th style="width: 33%; text-align: center;">Elaboró</th>
+                  <th style="width: 33%; text-align: center;">Revisó</th>
+                  <th style="width: 33%; text-align: center;">Aprobó</th>
+                </tr>
+                <tr>
+                  <td style="vertical-align: top;">
+                    <div class="signature-container mb-1"><img id="mt-img-elaboro" class="signature-img" style="max-height: 60px; display: none;"></div>
+                    <input type="text" id="mt-firma-elaboro" class="form-control text-center text-center-print mb-1" value="Nayith Morales Rua - nivel II Partículas Magnéticas" list="dl-firmantes">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('mt-file-elaboro').click()"><i class="bi bi-upload"></i> Subir Firma</button>
+                    <input type="file" id="mt-file-elaboro" class="d-none" accept="image/*" onchange="loadSignature(this, 'mt-img-elaboro')">
+                  </td>
+                  <td style="vertical-align: top;">
+                    <div class="signature-container mb-1"><img id="mt-img-reviso" class="signature-img" style="max-height: 60px; display: none;"></div>
+                    <input type="text" id="mt-firma-reviso" class="form-control text-center text-center-print mb-1" value="Carlos Aníbal Ortiz - Director Técnico" list="dl-firmantes">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('mt-file-reviso').click()"><i class="bi bi-upload"></i> Subir Firma</button>
+                    <input type="file" id="mt-file-reviso" class="d-none" accept="image/*" onchange="loadSignature(this, 'mt-img-reviso')">
+                  </td>
+                  <td style="vertical-align: top;">
+                    <div class="signature-container mb-1"><img id="mt-img-aprobo" class="signature-img" style="max-height: 60px; display: none;"></div>
+                    <input type="text" id="mt-firma-aprobo" class="form-control text-center text-center-print mb-1" list="dl-firmantes">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('mt-file-aprobo').click()"><i class="bi bi-upload"></i> Subir Firma</button>
+                    <input type="file" id="mt-file-aprobo" class="d-none" accept="image/*" onchange="loadSignature(this, 'mt-img-aprobo')">
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- UT Form Section -->
+    <section id="section-ut" class="content-section d-none">
+      <div id="ut-form-container">
+        <div id="panel-ut" class="report-panel">
+          <div class="report-header">
+            <div class="rh-logo-block">
+              <div class="rh-brand-logo-container" id="ut-header-logo-container">
+                <img id="ut-header-logo-img" style="max-height:50px; display:none;" class="mb-1">
+                <div id="ut-default-logo" style="display:flex; align-items:center; gap:3px;">
+                  <span class="cr-logo" style="font-weight:700; font-size:1.25rem; color:var(--cr-blue);">CORENDT</span>
+                  <span class="cr-tag" style="font-size:0.6rem; background:var(--cr-gold); color:#000; padding:0.1rem 0.3rem; border-radius:3px; font-weight:600;">COLOMBIA S.A.S.</span>
+                </div>
+              </div>
+              <div class="cr-brand-sub" id="ut-brand-sub">Ensayos No Destructivos</div>
+            </div>
+            <div class="rh-title"><h2>REPORTE UT MEDICIÓN DE ESPESORES</h2></div>
+            <div class="rh-meta">
+              <table>
+                <tr><td>Código:</td><td>COR-UT-0001</td></tr>
+                <tr><td>Versión:</td><td>01</td></tr>
+                <tr><td>Fecha:</td><td>09/09/2026</td></tr>
+              </table>
+            </div>
+          </div>
+          <!-- Status Bar Visual -->
+          <div id="ut-status-bar" class="status-bar-premium mb-3">
+            <div>
+              <i class="bi bi-file-earmark-diff me-2 text-primary"></i>
+              <strong>MODO:</strong> <span id="ut-mode-text" class="badge bg-gold text-dark ms-1">NUEVO REPORTE</span>
+            </div>
+            <div id="ut-last-save" class="text-muted small">
+              <i class="bi bi-clock-history me-1"></i> No guardado aún
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mb-3 report-actions">
+            <button id="btn-save-ut" class="btn btn-gold px-4 fw-bold"><i class="bi bi-save me-2"></i>Guardar</button>
+            <button id="btn-print-ut" class="btn btn-outline-primary"><i class="bi bi-printer me-2"></i>Imprimir</button>
+            <button id="btn-pdf-ut" class="btn btn-outline-secondary" onclick="window.NDT.pdf.generatePDF('ut')"><i class="bi bi-file-pdf me-2"></i>PDF</button>
+            <button id="btn-word-ut" class="btn btn-outline-secondary" onclick="window.NDT.pdf.exportWord('ut')"><i class="bi bi-file-word me-2"></i>Word</button>
+          </div>
+<div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">A. Información General</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body p-0">
+              <table class="print-table mb-0" style="table-layout: fixed;">
+                <tr>
+                  <th style="width: 16%;">N° Reporte</th>
+                  <td style="width: 17%;"><input type="text" id="ut-report-number" class="form-control form-report-number" readonly></td>
+                  <th style="width: 16%;">Fecha Ejecución</th>
+                  <td style="width: 17%;"><input type="date" id="ut-fecha-ejecucion" class="form-control"></td>
+                  <th style="width: 16%;">Fecha Reporte</th>
+                  <td style="width: 18%;"><input type="date" id="ut-fecha-reporte" class="form-control"></td>
+                </tr>
+                <tr>
+                  <th>Cliente</th>
+                  <td colspan="5"><input type="text" id="ut-cliente" class="form-control" autocomplete="off"></td>
+                </tr>
+<tr>
+<th>Orden de Trabajo</th>
+<td colspan="3">
+<div class="input-group">
+<input type="hidden" id="vt-ot-id">
+<input type="text" id="vt-ot-codigo" class="form-control" list="vt-ot-list" placeholder="Escriba código o seleccione orden..." readonly>
+<button class="btn btn-outline-primary" type="button" onclick="window.NDT.Ordenes && window.NDT.Ordenes.abrirBuscadorOrdenes('vt')" title="Buscar orden">
+<i class="bi bi-search"></i>
+</button>
+<button class="btn btn-outline-secondary" type="button" onclick="window.NDT.Ordenes.limpiarOrdenVT()" title="Limpiar">
+<i class="bi bi-x-circle"></i>
+</button>
+</div>
+<datalist id="vt-ot-list"></datalist>
+<div id="vt-ot-info" class="form-text text-primary mt-1" style="display:none;">
+<i class="bi bi-info-circle me-1"></i><span id="vt-ot-info-text"></span>
+</div>
+</td>
+</tr>
+                <tr>
+                  <th>Proyecto</th>
+                  <td><input type="text" id="ut-lugar" class="form-control" autocomplete="off"></td>
+                  <th>Equipo</th>
+                  <td><input type="text" id="ut-equipo" class="form-control" autocomplete="off"></td>
+                  <th>Sistema</th>
+                  <td><input type="text" id="ut-sistema" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Componente</th>
+                  <td><input type="text" id="ut-identificacion" class="form-control" autocomplete="off"></td>
+                  <th>Procedimiento</th>
+                  <td colspan="3"><input type="text" id="ut-procedimiento" class="form-control procedimiento-field" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Criterio</th>
+                  <td><input type="text" id="ut-criterio" class="form-control" autocomplete="off"></td>
+                  <th>Norma</th>
+                  <td colspan="3"><input type="text" id="ut-norma-aplicable" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Diámetro</th>
+                  <td><input type="text" id="ut-diametro" class="form-control" placeholder="Ø" autocomplete="off"></td>
+                  <th>Espesor Nom</th>
+                  <td><input type="text" id="ut-espesor-nom" class="form-control" placeholder="T" autocomplete="off"></td>
+                  <th>Equipo UT</th>
+                  <td><input type="text" id="ut-equipo-ut" class="form-control" placeholder="ej: USN35L"></td>
+                </tr>
+                <tr>
+                  <th>Frecuencia</th>
+                  <td><input type="text" id="ut-frecuencia-sonda" class="form-control" placeholder="ej: 4MHz"></td>
+                  <th>Ángulo Sonda</th>
+                  <td><input type="text" id="ut-angulo-sonda" class="form-control" placeholder="ej: 70°"></td>
+                  <th>N° Indicaciones</th>
+                  <td><input type="number" id="ut-numero-indicaciones" class="form-control" min="0" value="0"></td>
+                </tr>
+                <tr>
+                  <th>Hora Inicio</th>
+                  <td><input type="time" id="ut-hora-inicio" class="form-control"></td>
+                  <th>Hora Fin</th>
+                  <td><input type="time" id="ut-hora-fin" class="form-control"></td>
+                  <th>Estado</th>
+                  <td>
+                    <select id="ut-estado" class="form-select">
+                      <option value="Borrador">Borrador</option>
+                      <option value="Completo">Completo</option>
+                      <option value="Aprobado">Aprobado</option>
+                    </select>
+                  </td>
+                </tr>
+                <tr>
+                  <th>Inspector</th>
+                  <td><input type="text" id="ut-cedula-inspector" class="form-control" placeholder="Cédula"></td>
+                  <th>Supervisor</th>
+                  <td colspan="3"><input type="text" id="ut-cedula-supervisor" class="form-control" placeholder="Cédula"></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">B. Equipos Materiales y Consumibles</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <table class="print-table mb-0" style="table-layout: fixed;">
+                <tr>
+                  <th style="width: 20%;">Marca</th>
+                  <td style="width: 30%;"><input type="text" id="ut-marca" class="form-control" autocomplete="off"></td>
+                  <th style="width: 20%;">Modelo</th>
+                  <td style="width: 30%;"><input type="text" id="ut-modelo" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Serial</th>
+                  <td><input type="text" id="ut-serial" class="form-control" autocomplete="off"></td>
+                  <th>Modos de Visualización</th>
+                  <td><input type="text" id="ut-visualizacion" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Frecuencia Palpador</th>
+                  <td><input type="text" id="ut-frecuencia" class="form-control" autocomplete="off"></td>
+                  <th>Tipo de Palpador</th>
+                  <td><input type="text" id="ut-tipo-palpador" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Fecha Calibración</th>
+                  <td><input type="date" id="ut-fecha-cal" class="form-control"></td>
+                  <th>Patrón Calibración</th>
+                  <td><input type="text" id="ut-patron" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Material(es)</th>
+                  <td><input type="text" id="ut-material" class="form-control" autocomplete="off"></td>
+                  <th>Tipo de Acoplante</th>
+                  <td><input type="text" id="ut-acoplante" class="form-control" list="dl-acoplante" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Condición Superficie</th>
+                  <td><input type="text" id="ut-condicion" class="form-control" autocomplete="off"></td>
+                  <th>Temp. Superficie (°C)</th>
+                  <td><input type="text" id="ut-temperatura" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>NORMA QUE APLICA</th>
+                  <td><input type="text" id="ut-norma" class="form-control" autocomplete="off"></td>
+                  <th>Velocidad del Sonido</th>
+                  <td><input type="text" id="ut-velocidad" class="form-control" autocomplete="off"></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">C. Vista General del Componente Examinado</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body" id="ut-vista-general-annex">
+              <div class="resize-container" style="resize: vertical; overflow: auto; min-height: 100px; max-height: 400px; border: 1px dashed #ccc; padding: 5px;">
+                <div class="vista-general-photos" id="ut-vista-general-photos"></div>
+              </div>
+              <div class="text-center mt-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('ut-vista-general-file').click()">
+                  <i class="bi bi-plus-circle"></i> Agregar Foto (max 2)
+                </button>
+                <input type="file" id="ut-vista-general-file" class="d-none" accept="image/*" multiple onchange="handleVistaGeneralPhotos('ut', this)">
+              </div>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">D. Evaluación Especializada de Integridad (API / ASME)</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <div class="row g-2 mb-3">
+                <div class="col-md-3">
+                  <label class="form-label small mb-1 fw-bold">Norma de Evaluación</label>
+                  <select id="ut-eval-standard" class="form-select form-select-sm border-primary">
+                    <option value="">Ninguna (Criterio General)</option>
+                    <option value="API510">API 510 (Recipientes a Presión)</option>
+                    <option value="API570">API 570 (Tuberías de Proceso)</option>
+                    <option value="API653">API 653 (Tanques de Almacenamiento)</option>
+                    <option value="ASME1">ASME Sec. I (Calderas)</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small mb-1">NPS (Diámetro Nominal)</label>
+                  <select id="ut-nps" class="form-select form-select-sm">
+                    <option value="">Seleccione...</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small mb-1">Schedule / Cédula</label>
+                  <select id="ut-schedule" class="form-select form-select-sm">
+                    <option value="">Seleccione...</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small mb-1">T-Nominal (mm)</label>
+                  <div class="input-group input-group-sm">
+                    <input type="number" id="ut-eval-tnom" class="form-control" step="0.001">
+                    <span class="input-group-text bg-light fw-bold" id="ut-eval-tnom-display">0.000</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-md-2">
+                  <label class="form-label mb-0" style="font-size: 0.75rem;">Presión P (psi)</label>
+                  <input type="number" id="ut-eval-p" class="form-control form-control-sm" step="0.1" value="100">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label mb-0" style="font-size: 0.75rem;">Diámetro D (in)</label>
+                  <input type="number" id="ut-eval-d" class="form-control form-control-sm" step="0.1">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label mb-0" style="font-size: 0.75rem;">S (psi) Esfuerzo</label>
+                  <input type="number" id="ut-eval-s" class="form-control form-control-sm" step="100" value="15000">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label mb-0" style="font-size: 0.75rem;">Eficiencia (E)</label>
+                  <input type="number" id="ut-eval-e" class="form-control form-control-sm" step="0.05" value="1.0">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label mb-0" style="font-size: 0.75rem;">H (ft) / G</label>
+                  <div class="d-flex gap-1">
+                    <input type="number" id="ut-eval-h" class="form-control form-control-sm" step="0.1" placeholder="H">
+                    <input type="number" id="ut-eval-g" class="form-control form-control-sm" step="0.01" value="1.0" placeholder="G">
+                  </div>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label mb-0" style="font-size: 0.75rem;">Allow. CA (mm)</label>
+                  <input type="number" id="ut-eval-ca" class="form-control form-control-sm" step="0.1" value="0">
+                </div>
+              </div>
+              <div class="mt-2 text-muted" style="font-size: 0.7rem;">
+                <i class="bi bi-info-circle me-1"></i>Los parámetros de diseño automatizan el cálculo de Vida Remanente según estándares API/ASME.
+              </div>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">E. Mediciones</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <div class="d-flex justify-content-between align-items-center mb-2 px-1 pt-1">
+                <span class="text-muted" style="font-size: 0.65rem;"><i class="bi bi-info-circle me-1"></i> Cálculos automáticos activos.</span>
+                <div class="btn-group me-2">
+                  <select id="ut-quick-pipe" class="form-select form-select-xs" style="font-size: 0.65rem; width: 120px; padding: 1px 4px;">
+                    <option value="">Quick Pipe...</option>
+                    <optgroup label="1/2 pulg">
+                      <option value="1/2|40">1/2" Sch 40 (2.77mm)</option>
+                      <option value="1/2|80">1/2" Sch 80 (3.73mm)</option>
+                    </optgroup>
+                    <optgroup label="2 pulg">
+                      <option value="2|40">2" Sch 40 (3.91mm)</option>
+                      <option value="2|80">2" Sch 80 (5.54mm)</option>
+                    </optgroup>
+                    <optgroup label="4 pulg">
+                      <option value="4|40">4" Sch 40 (6.02mm)</option>
+                      <option value="4|80">4" Sch 80 (8.56mm)</option>
+                    </optgroup>
+                    <optgroup label="6 pulg">
+                      <option value="6|40">6" Sch 40 (7.11mm)</option>
+                      <option value="6|80">6" Sch 80 (10.97mm)</option>
+                    </optgroup>
+                    <optgroup label="8 pulg">
+                      <option value="8|40">8" Sch 40 (8.18mm)</option>
+                      <option value="8|80">8" Sch 80 (12.70mm)</option>
+                    </optgroup>
+                  </select>
+                  <select id="ut-quick-plate" class="form-select form-select-xs" style="font-size: 0.65rem; width: 120px; padding: 1px 4px;">
+                    <option value="">Quick Plate...</option>
+                    <option value="1/4">Lámina 1/4" (6.35mm)</option>
+                    <option value="1/2">Lámina 1/2" (12.70mm)</option>
+                    <option value="3/4">Lámina 3/4" (19.05mm)</option>
+                    <option value="1">Lámina 1" (25.40mm)</option>
+                  </select>
+                </div>
+                <div class="btn-group">
+                  <button type="button" class="btn btn-xs btn-outline-success" id="ut-btn-add-1" style="font-size: 0.65rem; padding: 1px 4px;"><i class="bi bi-plus-circle me-1"></i>Adicionar CML</button>
+                  <button type="button" class="btn btn-xs btn-outline-primary" id="ut-btn-add-5" style="font-size: 0.65rem; padding: 1px 4px;"><i class="bi bi-plus-square me-1"></i>+5 CMLs</button>
+                  <button type="button" class="btn btn-xs btn-outline-secondary" id="ut-btn-fill-tnom" style="font-size: 0.65rem; padding: 1px 4px;"><i class="bi bi-arrow-down-square me-1"></i>Auto TNOM</button>
+                </div>
+              </div>
+              <div class="resize-container-results" style="resize: vertical; overflow: auto; min-height: 80px; max-height: 400px;">
+                <div class="table-responsive" style="max-width: 100%;">
+                  <table class="ndt-table table-ultrasonido" style="font-size:.65rem; width: 100%; min-width: 900px;">
+                    <thead>
+                      <tr id="ut-header-1">
+                        <th rowspan="2" style="width: 80px;">PUNTOS</th>
+                        <th rowspan="2" style="width: 70px;">TNOM (mm)</th>
+                        <th rowspan="2">OBSERVACIÓN</th>
+                        <th colspan="13" class="text-center">ESPESORES MEDIDOS (mm)</th>
+                        <th rowspan="2" style="width: 60px;">EDAD (AÑOS)</th>
+                        <th colspan="3" class="text-center">VIDA RESIDUAL</th>
+                        <th rowspan="2" style="width: 40px;"></th>
+                      </tr>
+                      <tr id="ut-header-2">
+                        <th class="text-center">A</th><th class="text-center">B</th><th class="text-center">C</th><th class="text-center">D</th>
+                        <th class="text-center">E</th><th class="text-center">F</th><th class="text-center">G</th><th class="text-center">H</th>
+                        <th class="text-center">I</th><th class="text-center">J</th><th class="text-center">K</th><th class="text-center">L</th>
+                        <th class="text-center" style="background:#e9f0f8;">Tmin</th>
+                        <th class="text-center">% PÉRDIDA</th>
+                        <th class="text-center">RATA CORR.</th>
+                        <th class="text-center">VIDA REM.</th>
+                      </tr>
+                      <tr id="ut-header-3">
+                        <th colspan="21" class="text-center py-1 ut-dynamic-title" style="background:#005c96; color:#fff; font-weight:bold; font-size: 0.85rem; text-transform: uppercase;">
+                          ESPESORES MEDIDOS EN EQUIPO / COMPONENTE
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody id="ut-results-body"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">F. Observaciones</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <textarea id="ut-observaciones" class="form-control" rows="5" style="width:100%;"></textarea>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">G. Anexo Fotográfico</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body" id="ut-photo-annex">
+              <div class="resize-container">
+                <div class="anexo-photos" id="ut-anexo-photos"></div>
+              </div>
+              <div class="text-center mt-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('ut-anexo-file').click()">
+                  <i class="bi bi-plus-circle"></i> Agregar Foto
+                </button>
+                <input type="file" id="ut-anexo-file" class="d-none" accept="image/*" multiple onchange="handleAnexoPhotos('ut', this)">
+              </div>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">H. Firmas</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <table class="table-signatures mb-0">
+                <tr>
+                  <th style="width: 33%; text-align: center;">Elaboró</th>
+                  <th style="width: 33%; text-align: center;">Revisó</th>
+                  <th style="width: 33%; text-align: center;">Aprobó</th>
+                </tr>
+                <tr>
+                  <td style="vertical-align: top;">
+                    <div class="signature-container mb-1"><img id="ut-img-elaboro" class="signature-img" style="max-height: 60px; display: none;"></div>
+                    <input type="text" id="ut-firma-elaboro" class="form-control text-center text-center-print mb-1" value="Nayith Morales Rua - nivel II Ultrasonido Industrial" list="dl-firmantes">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('ut-file-elaboro').click()"><i class="bi bi-upload"></i> Subir Firma</button>
+                    <input type="file" id="ut-file-elaboro" class="d-none" accept="image/*" onchange="loadSignature(this, 'ut-img-elaboro')">
+                  </td>
+                  <td style="vertical-align: top;">
+                    <div class="signature-container mb-1"><img id="ut-img-reviso" class="signature-img" style="max-height: 60px; display: none;"></div>
+                    <input type="text" id="ut-firma-reviso" class="form-control text-center text-center-print mb-1" value="Carlos Aníbal Ortiz - Director Técnico" list="dl-firmantes">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('ut-file-reviso').click()"><i class="bi bi-upload"></i> Subir Firma</button>
+                    <input type="file" id="ut-file-reviso" class="d-none" accept="image/*" onchange="loadSignature(this, 'ut-img-reviso')">
+                  </td>
+                  <td style="vertical-align: top;">
+                    <div class="signature-container mb-1"><img id="ut-img-aprobo" class="signature-img" style="max-height: 60px; display: none;"></div>
+                    <input type="text" id="ut-firma-aprobo" class="form-control text-center text-center-print mb-1" list="dl-firmantes">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('ut-file-aprobo').click()"><i class="bi bi-upload"></i> Subir Firma</button>
+                    <input type="file" id="ut-file-aprobo" class="d-none" accept="image/*" onchange="loadSignature(this, 'ut-img-aprobo')">
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VT Form Section -->
+    <section id="section-vt" class="content-section d-none">
+      <div id="vt-form-container">
+        <div id="panel-vt" class="report-panel">
+          <div class="report-header">
+            <div class="rh-logo-block">
+              <div class="rh-brand-logo-container" id="vt-header-logo-container">
+                <img id="vt-header-logo-img" style="max-height:50px; display:none;" class="mb-1">
+                <div id="vt-default-logo" style="display:flex; align-items:center; gap:3px;">
+                  <span class="cr-logo" style="font-weight:700; font-size:1.25rem; color:var(--cr-blue);">CORENDT</span>
+                  <span class="cr-tag" style="font-size:0.6rem; background:var(--cr-gold); color:#000; padding:0.1rem 0.3rem; border-radius:3px; font-weight:600;">COLOMBIA S.A.S.</span>
+                </div>
+              </div>
+              <div class="cr-brand-sub" id="vt-brand-sub">Ensayos No Destructivos</div>
+            </div>
+            <div class="rh-title"><h2>REPORTE INSPECCIÓN VISUAL</h2></div>
+            <div class="rh-meta">
+              <table>
+                <tr><td>Código:</td><td>COR-VT-0001</td></tr>
+                <tr><td>Versión:</td><td>01</td></tr>
+                <tr><td>Fecha:</td><td>09/09/2026</td></tr>
+              </table>
+            </div>
+          </div>
+          <!-- Status Bar Visual -->
+          <div id="vt-status-bar" class="status-bar-premium mb-3">
+            <div>
+              <i class="bi bi-file-earmark-diff me-2 text-primary"></i>
+              <strong>MODO:</strong> <span id="vt-mode-text" class="badge bg-gold text-dark ms-1">NUEVO REPORTE</span>
+            </div>
+            <div id="vt-last-save" class="text-muted small">
+              <i class="bi bi-clock-history me-1"></i> No guardado aún
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mb-3 report-actions">
+            <button id="btn-save-vt" class="btn btn-gold px-4 fw-bold"><i class="bi bi-save me-2"></i>Guardar</button>
+            <button id="btn-print-vt" class="btn btn-outline-primary"><i class="bi bi-printer me-2"></i>Imprimir</button>
+            <button id="btn-pdf-vt" class="btn btn-outline-secondary" onclick="window.NDT.pdf.generatePDF('vt')"><i class="bi bi-file-pdf me-2"></i>PDF</button>
+            <button id="btn-word-vt" class="btn btn-outline-secondary" onclick="window.NDT.pdf.exportWord('vt')"><i class="bi bi-file-word me-2"></i>Word</button>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">A. Información General</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <table class="print-table mb-0" style="table-layout: fixed;">
+                <tr>
+                  <th style="width: 20%;">N° Reporte</th>
+                  <td style="width: 30%;"><input type="text" id="vt-report-number" class="form-control form-report-number" readonly></td>
+                  <th style="width: 20%;">Fecha Ejecución</th>
+                  <td style="width: 30%;"><input type="date" id="vt-fecha-ejecucion" class="form-control"></td>
+                </tr>
+                <tr>
+                  <th>Cliente</th>
+                  <td><input type="text" id="vt-cliente" class="form-control" autocomplete="off"></td>
+                  <th>Fecha Reporte</th>
+                  <td><input type="date" id="vt-fecha-reporte" class="form-control"></td>
+                </tr>
+<tr>
+<th>Orden de Trabajo</th>
+<td colspan="3">
+<div class="input-group">
+<input type="hidden" id="ut-ot-id">
+<input type="text" id="ut-ot-codigo" class="form-control" list="ut-ot-list" placeholder="Escriba código o seleccione orden..." readonly>
+<button class="btn btn-outline-primary" type="button" onclick="window.NDT.Ordenes && window.NDT.Ordenes.abrirBuscadorOrdenes('ut')" title="Buscar orden">
+<i class="bi bi-search"></i>
+</button>
+<button class="btn btn-outline-secondary" type="button" onclick="window.NDT.Ordenes.limpiarOrdenUT()" title="Limpiar">
+<i class="bi bi-x-circle"></i>
+</button>
+</div>
+<datalist id="ut-ot-list"></datalist>
+<div id="ut-ot-info" class="form-text text-primary mt-1" style="display:none;">
+<i class="bi bi-info-circle me-1"></i><span id="ut-ot-info-text"></span>
+</div>
+</td>
+</tr>
+                <tr>
+                  <th>Proyecto/Lugar</th>
+                  <td><input type="text" id="vt-lugar" class="form-control" autocomplete="off"></td>
+                  <th>Equipo</th>
+                  <td>
+                    <select id="vt-equipo" class="form-select">
+                      <option value="">Seleccione...</option>
+                      <option value="Bomba">Bomba</option><option value="Cabezal">Cabezal</option><option value="Caldera">Caldera</option>
+                      <option value="Caldera acuotubular">Caldera acuotubular</option><option value="Caldera pirotubular">Caldera pirotubular</option>
+                      <option value="Chimenea">Chimenea</option><option value="Compresor">Compresor</option><option value="Condensador">Condensador</option>
+                      <option value="Contenedor">Contenedor</option><option value="Depósito">Depósito</option><option value="Desaireador">Desaireador</option>
+                      <option value="Dryer">Dryer</option><option value="Estructura metálica">Estructura metálica</option><option value="Filtro">Filtro</option>
+                      <option value="Generador de vapor">Generador de vapor</option><option value="Heater">Heater</option><option value="Interceptor">Interceptor</option>
+                      <option value="Intercambiador de calor">Intercambiador de calor</option><option value="Maquinaria">Maquinaria</option>
+                      <option value="Motor">Motor</option><option value="Permutador">Permutador</option><option value="Polea">Polea</option>
+                      <option value="Precalentador">Precalentador</option><option value="Prensa">Prensa</option><option value="Reactor">Reactor</option>
+                      <option value="Reboiler">Reboiler</option><option value="Rodillo">Rodillo</option><option value="Scrubber">Scrubber</option>
+                      <option value="Separador">Separador</option><option value="Silo">Silo</option><option value="Tanque">Tanque</option>
+                    </select>
+                  </td>
+                </tr>
+                <tr>
+                  <th>Tipo de Inspección</th>
+                  <td>
+                    <select id="vt-tipo-inspeccion" class="form-select">
+                      <option value="Visual">Visual</option>
+                      <option value="Remota">Remota</option>
+                    </select>
+                  </td>
+                  <th>Procedimiento</th>
+                  <td><input type="text" id="vt-procedimiento" class="form-control procedimiento-field" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Criterio de Evaluación</th>
+                  <td><input type="text" id="vt-criterio" class="form-control" autocomplete="off"></td>
+                  <th>Norma Aplicable</th>
+                  <td><input type="text" id="vt-norma" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Hora Inicio</th>
+                  <td><input type="time" id="vt-hora-inicio" class="form-control"></td>
+                  <th>Hora Fin</th>
+                  <td><input type="time" id="vt-hora-fin" class="form-control"></td>
+                </tr>
+                <tr>
+                  <th>Cédula Inspector</th>
+                  <td><input type="text" id="vt-cedula-inspector" class="form-control" placeholder="ej: 12345678"></td>
+                  <th>Cédula Supervisor</th>
+                  <td><input type="text" id="vt-cedula-supervisor" class="form-control" placeholder="ej: 87654321"></td>
+                </tr>
+                <tr>
+                  <th>Estado</th>
+                  <td>
+                    <select id="vt-estado" class="form-select">
+                      <option value="Borrador">Borrador</option>
+                      <option value="Completo">Completo</option>
+                      <option value="Aprobado">Aprobado</option>
+                    </select>
+                  </td>
+                  <th>Equipo VT</th>
+                  <td><input type="text" id="vt-equipo-vt" class="form-control" placeholder="ej: VIDEOSCOPE"></td>
+                </tr>
+                <tr>
+                  <th>N° Defectos</th>
+                  <td><input type="number" id="vt-numero-defectos" class="form-control" min="0" value="0"></td>
+                  <th>Severidad Defectos</th>
+                  <td>
+                    <select id="vt-severidad-defectos" class="form-select">
+                      <option value="N/A">N/A</option>
+                      <option value="Menor">Menor</option>
+                      <option value="Mayor">Mayor</option>
+                      <option value="Crítico">Crítico</option>
+                    </select>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">B. Vista General del Componente</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body" id="vt-vista-general-annex">
+              <div class="resize-container" style="resize: vertical; overflow: auto; min-height: 100px; max-height: 400px; border: 1px dashed #ccc; padding: 5px;">
+                <div class="vista-general-photos" id="vt-vista-general-photos"></div>
+              </div>
+              <div class="text-center mt-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('vt-vista-general-file').click()">
+                  <i class="bi bi-plus-circle"></i> Agregar Foto (max 2)
+                </button>
+                <input type="file" id="vt-vista-general-file" class="d-none" accept="image/*" multiple onchange="handleVistaGeneralPhotos('vt', this)">
+              </div>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">C. Resultados de Inspección</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <div class="resize-container-results" style="resize: vertical; overflow: auto; min-height: 80px; max-height: 400px;">
+                <div class="table-responsive">
+                  <table class="ndt-table">
+                    <thead>
+                      <tr>
+                        <th>Elemento / parte</th>
+                        <th>Ubicación</th>
+                        <th>Observación</th>
+                        <th>Foto Ref</th>
+                        <th style="width: 40px;"></th>
+                      </tr>
+                    </thead>
+                    <tbody id="vt-results-body"></tbody>
+                  </table>
+                  <datalist id="vt-elementos-list"></datalist>
+                </div>
+              </div>
+              <div class="mt-2 d-flex justify-content-end">
+                <button class="btn btn-sm btn-outline-primary" id="btn-add-row-vt"><i class="bi bi-plus-circle"></i> Adicionar Fila</button>
+              </div>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">D. Anexo Fotográfico</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body" id="vt-photo-annex">
+              <div class="resize-container">
+                <div class="anexo-photos" id="vt-anexo-photos"></div>
+              </div>
+              <div class="text-center mt-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('vt-anexo-file').click()">
+                  <i class="bi bi-plus-circle"></i> Agregar Foto
+                </button>
+                <input type="file" id="vt-anexo-file" class="d-none" accept="image/*" multiple onchange="handleAnexoPhotos('vt', this)">
+              </div>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">E. Conclusiones</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <textarea id="vt-conclusiones" class="form-control" rows="4" style="width:100%;"></textarea>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">F. Recomendaciones</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <textarea id="vt-recomendaciones" class="form-control" rows="4" style="width:100%;"></textarea>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">G. Evaluación Especializada de Integridad (API / ASME)</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <div class="row g-2 mb-3">
+                <div class="col-md-4">
+                  <label class="form-label small mb-1 fw-bold">Norma de Evaluación</label>
+                  <select id="vt-eval-standard" class="form-select form-select-sm border-primary">
+                    <option value="">Ninguna (Criterio General)</option>
+                    <option value="API510">API 510 (Recipientes a Presión)</option>
+                    <option value="API570">API 570 (Tuberías de Proceso)</option>
+                    <option value="API653">API 653 (Tanques de Almacenamiento)</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small mb-1">Presión Diseño (PSI)</label>
+                  <input type="number" id="vt-eval-p" class="form-control form-control-sm" step="0.1">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small mb-1">Temperatura Diseño (°F)</label>
+                  <input type="number" id="vt-eval-t" class="form-control form-control-sm" step="0.1">
+                </div>
+              </div>
+              <div class="row g-2">
+                <div class="col-md-12">
+                  <label class="form-label small mb-1">Notas de Integridad Visual</label>
+                  <textarea id="vt-eval-note" class="form-control form-control-sm" rows="2" placeholder="Describir condición estructural, soportería, etc."></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">H. Firmas</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <table class="table-signatures mb-0">
+                <tr>
+                  <th style="width: 33%; text-align: center;">Elaboró</th>
+                  <th style="width: 33%; text-align: center;">Revisó</th>
+                  <th style="width: 33%; text-align: center;">Aprobó</th>
+                </tr>
+                <tr>
+                  <td style="vertical-align: top;">
+                    <div class="signature-container mb-1"><img id="vt-img-elaboro" class="signature-img" style="max-height: 60px; display: none;"></div>
+                    <input type="text" id="vt-firma-elaboro" class="form-control text-center text-center-print mb-1" list="dl-firmantes">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('vt-file-elaboro').click()"><i class="bi bi-upload"></i> Subir Firma</button>
+                    <input type="file" id="vt-file-elaboro" class="d-none" accept="image/*" onchange="loadSignature(this, 'vt-img-elaboro')">
+                  </td>
+                  <td style="vertical-align: top;">
+                    <div class="signature-container mb-1"><img id="vt-img-reviso" class="signature-img" style="max-height: 60px; display: none;"></div>
+                    <input type="text" id="vt-firma-reviso" class="form-control text-center text-center-print mb-1" list="dl-firmantes">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('vt-file-reviso').click()"><i class="bi bi-upload"></li>
+                    <input type="file" id="vt-file-reviso" class="d-none" accept="image/*" onchange="loadSignature(this, 'vt-img-reviso')">
+                  </td>
+                  <td style="vertical-align: top;">
+                    <div class="signature-container mb-1"><img id="vt-img-aprobo" class="signature-img" style="max-height: 60px; display: none;"></div>
+                    <input type="text" id="vt-firma-aprobo" class="form-control text-center text-center-print mb-1" list="dl-firmantes">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('vt-file-aprobo').click()"><i class="bi bi-upload"></i> Subir Firma</button>
+                    <input type="file" id="vt-file-aprobo" class="d-none" accept="image/*" onchange="loadSignature(this, 'vt-img-aprobo')">
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- UTPA Form Section -->
+    <section id="section-utpa" class="content-section d-none">
+      <div id="utpa-form-container">
+        <div id="panel-utpa" class="report-panel">
+          <div class="report-header">
+            <div class="rh-logo-block">
+              <div class="rh-brand-logo-container" id="utpa-header-logo-container">
+                <img id="utpa-header-logo-img" style="max-height:50px; display:none;" class="mb-1">
+                <div id="utpa-default-logo" style="display:flex; align-items:center; gap:3px;">
+                  <span class="cr-logo" style="font-weight:700; font-size:1.25rem; color:var(--cr-blue);">CORENDT</span>
+                  <span class="cr-tag" style="font-size:0.6rem; background:var(--cr-gold); color:#000; padding:0.1rem 0.3rem; border-radius:3px; font-weight:600;">COLOMBIA S.A.S.</span>
+                </div>
+              </div>
+              <div class="cr-brand-sub" id="utpa-brand-sub">Ensayos No Destructivos</div>
+            </div>
+            <div class="rh-title"><h2>REPORTE DE MEDICIÓN UTPA<br><small style="font-size:12px;color:#6c757d;">Phased Array — Monitoreo de Espesores y Evaluación por Norma</small></h2></div>
+            <div class="rh-meta">
+              <table>
+                <tr><td>Código:</td><td>COR-UTPA-0001</td></tr>
+                <tr><td>Versión:</td><td>01</td></tr>
+                <tr><td>Fecha:</td><td>09/09/2026</td></tr>
+              </table>
+            </div>
+          </div>
+          <!-- Status Bar Visual -->
+          <div id="utpa-status-bar" class="status-bar-premium mb-3">
+            <div>
+              <i class="bi bi-file-earmark-diff me-2 text-primary"></i>
+              <strong>MODO:</strong> <span id="utpa-mode-text" class="badge bg-gold text-dark ms-1">NUEVO REPORTE</span>
+            </div>
+            <div id="utpa-last-save" class="text-muted small">
+              <i class="bi bi-clock-history me-1"></i> No guardado aún
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mb-3 report-actions">
+            <button id="btn-save-utpa" class="btn btn-gold px-4 fw-bold"><i class="bi bi-save me-2"></i>Guardar</button>
+            <button id="btn-print-utpa" class="btn btn-outline-primary"><i class="bi bi-printer me-2"></i>Imprimir</button>
+            <button id="btn-pdf-utpa" class="btn btn-outline-secondary"><i class="bi bi-file-pdf me-2"></i>PDF</button>
+            <button id="btn-word-utpa" class="btn btn-outline-secondary"><i class="bi bi-file-word me-2"></i>Word</button>
+          </div>
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">A. Información General</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body p-0">
+              <table class="print-table mb-0" style="table-layout: fixed;">
+                <tr>
+                  <th style="width: 16%;">N° Reporte</th>
+                  <td style="width: 17%;"><input type="text" id="utpa-report-number" class="form-control form-report-number" readonly></td>
+                  <th style="width: 16%;">Fecha Ejecución</th>
+                  <td style="width: 17%;"><input type="date" id="utpa-fecha-ejecucion" class="form-control"></td>
+                  <th style="width: 16%;">Fecha Reporte</th>
+                  <td style="width: 18%;"><input type="date" id="utpa-fecha-reporte" class="form-control"></td>
+                </tr>
+                <tr>
+                  <th>Cliente</th>
+                  <td colspan="5"><input type="text" id="utpa-cliente" class="form-control" autocomplete="off"></td>
+                </tr>
+<tr>
+<th>Orden de Trabajo</th>
+<td colspan="3">
+<div class="input-group">
+<input type="hidden" id="utpa-ot-id">
+<input type="text" id="utpa-ot-codigo" class="form-control" list="utpa-ot-list" placeholder="Escriba código o seleccione orden..." readonly>
+<button class="btn btn-outline-primary" type="button" onclick="window.NDT.Ordenes && window.NDT.Ordenes.abrirBuscadorOrdenes('utpa')" title="Buscar orden">
+<i class="bi bi-search"></i>
+</button>
+<button class="btn btn-outline-secondary" type="button" onclick="window.NDT.Ordenes.limpiarOrdenUTPA()" title="Limpiar">
+<i class="bi bi-x-circle"></i>
+</button>
+</div>
+<datalist id="utpa-ot-list"></datalist>
+<div id="utpa-ot-info" class="form-text text-primary mt-1" style="display:none;">
+<i class="bi bi-info-circle me-1"></i><span id="utpa-ot-info-text"></span>
+</div>
+</td>
+</tr>
+                <tr>
+                  <th>Lugar/Proyecto</th>
+                  <td><input type="text" id="utpa-lugar" class="form-control" autocomplete="off"></td>
+                  <th>Equipo</th>
+                  <td colspan="3"><input type="text" id="utpa-equipo" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Norma</th>
+                  <td><input type="text" id="utpa-norma" class="form-control" autocomplete="off"></td>
+                  <th>Procedimiento</th>
+                  <td colspan="3"><input type="text" id="utpa-procedimiento" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Material</th>
+                  <td><input type="text" id="utpa-material" class="form-control" autocomplete="off"></td>
+                  <th>Espesor (mm)</th>
+                  <td colspan="2"><input type="text" id="utpa-espesor" class="form-control" autocomplete="off"></td>
+                  <td style="display:none;"><input type="text" id="utpa-sistema"></td>
+                </tr>
+                <tr>
+                  <th>Junta / Soldadura</th>
+                  <td><input type="text" id="utpa-junta" class="form-control" autocomplete="off"></td>
+                  <th>OD (mm)</th>
+                  <td><input type="text" id="utpa-od" class="form-control" autocomplete="off"></td>
+                  <th>Schedule</th>
+                  <td><input type="text" id="utpa-schedule" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th>Técnica</th>
+                  <td colspan="5"><input type="text" id="utpa-tecnica" class="form-control" autocomplete="off"></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">B. Configuración del Instrumento</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body p-0">
+              <table class="print-table mb-0" style="table-layout: fixed;">
+                <colgroup>
+                  <col style="width:16.67%">
+                  <col style="width:16.67%">
+                  <col style="width:16.67%">
+                  <col style="width:16.67%">
+                  <col style="width:16.66%">
+                  <col style="width:16.66%">
+                </colgroup>
+                <tr>
+                  <th style="text-align:center;">Marca</th><td><input type="text" id="utpa-marca" class="form-control" autocomplete="off"></td>
+                  <th style="text-align:center;">Modelo</th><td><input type="text" id="utpa-modelo" class="form-control" autocomplete="off"></td>
+                  <th style="text-align:center;">Serial</th><td><input type="text" id="utpa-serial" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th style="text-align:center;">Visualización</th><td><input type="text" id="utpa-visualizacion" class="form-control" autocomplete="off"></td>
+                  <th style="text-align:center;">Frecuencia</th><td><input type="text" id="utpa-frecuencia" class="form-control" autocomplete="off"></td>
+                  <th style="text-align:center;">Tipo Palpador</th><td><input type="text" id="utpa-tipo-palpador" class="form-control" autocomplete="off"></td>
+                </tr>
+                <tr>
+                  <th style="text-align:center;">Patrón Cal.</th><td><input type="text" id="utpa-patron" class="form-control" autocomplete="off"></td>
+                  <th style="text-align:center;">Acoplante</th><td><input type="text" id="utpa-acoplante" class="form-control" autocomplete="off"></td>
+                  <th style="text-align:center;">Velocidad (m/s)</th><td><input type="text" id="utpa-velocidad" class="form-control" autocomplete="off"></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">C. Resultados — Examen de Unión Soldada</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body p-0">
+              <div class="p-2 d-flex gap-2 flex-wrap border-bottom bg-light">
+                <span class="small text-muted me-1"><i class="bi bi-lightning me-1"></i>Acciones rápidas:</span>
+                <button id="utpa-btn-add-1" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> +1 Junta</button>
+                <button id="utpa-btn-add-5" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-lg"></i> +5 Juntas</button>
+                <div class="ms-auto">
+                  <label class="small text-muted me-1">Fecha examen:</label>
+                  <input type="date" id="utpa-fecha-examen" class="form-control form-control-sm" style="width:150px;">
+                </div>
+              </div>
+              <div class="table-responsive" style="overflow-x:auto;">
+                <table class="table table-sm table-bordered mb-0" style="font-size:11px; min-width:1100px;">
+                  <thead class="table-primary">
+                    <tr>
+                      <th colspan="10" class="text-center fw-bold" style="background:#0078bf;color:white;font-size:14px;padding:8px;letter-spacing:1.5px;">RESULTADOS</th>
+                    </tr>
+                    <tr>
+                      <th rowspan="2" style="width:40px;vertical-align:middle;font-size:11px;">ITEM</th>
+                      <th rowspan="2" style="width:100px;vertical-align:middle;font-size:11px;">IDENTIFICACIÓN</th>
+                      <th rowspan="2" style="width:70px;vertical-align:middle;font-size:11px;">ESPESOR<br><small style="font-size:10px;">(mm)</small></th>
+                      <th rowspan="2" style="width:80px;vertical-align:middle;font-size:11px;">TIPO DE<br>INDICACIÓN</th>
+                      <th colspan="5" class="text-center" style="background:#e3f2fd;font-size:11px;font-weight:600;">DIMENSIÓN Y UBICACIÓN</th>
+                      <th rowspan="2" style="width:100px;vertical-align:middle;font-size:11px;">CARACTERIZACIÓN</th>
+                      <th colspan="2" class="text-center" style="background:#e8f5e9;font-size:11px;font-weight:600;">RESULTADOS DE<br>EVALUACIÓN</th>
+                      <th rowspan="2" style="width:35px;"></th>
+                    </tr>
+                    <tr style="background:#e3f2fd;">
+                      <th style="width:70px;font-size:11px;">PROFUND<br>IDAD</th>
+                      <th style="width:70px;font-size:11px;">LONGITUD</th>
+                      <th style="width:50px;font-size:11px;">HA %</th>
+                      <th style="width:50px;font-size:11px;">SA</th>
+                      <th style="width:70px;font-size:11px;">ÁNGULO<br>MAX(°)</th>
+                      <th style="width:60px;font-size:11px;background:#e8f5e9;">ACEPTADO</th>
+                      <th style="width:60px;font-size:11px;background:#ffebee;">RECHAZADO</th>
+                    </tr>
+                  </thead>
+                  <tbody id="utpa-results-body"></tbody>
+                </table>
+              </div>
+              <div class="p-2 small text-muted">
+                <i class="bi bi-info-circle me-1"></i>Complete los campos de cada junta soldada. Marque ACEPTADO o RECHAZADO según criterios de evaluación.
+              </div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">D. Resultado / Observaciones</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body p-0">
+              <table class="print-table mb-0" style="table-layout: fixed;">
+                <tr>
+                  <th style="width:14%;">Resultado</th>
+                  <td><input type="text" id="utpa-resultado" class="form-control" autocomplete="off" placeholder="Aprobado / Rechazado / Pendiente"></td>
+                </tr>
+                <tr>
+                  <th>Observaciones</th>
+                  <td><textarea id="utpa-observaciones" class="form-control" rows="3" placeholder="Notas adicionales, recomendaciones, comentarios..."></textarea></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">E. Anexo Fotográfico</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body">
+              <ul class="nav nav-tabs" id="utpa-photo-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active" id="utpa-tab-vista-general" data-bs-toggle="tab" data-bs-target="#utpa-vista-general" type="button">Vista General</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="utpa-tab-anexo" data-bs-toggle="tab" data-bs-target="#utpa-anexo" type="button">Anexo Fotográfico</button>
+                </li>
+              </ul>
+              <div class="tab-content mt-2">
+                <div class="tab-pane fade show active" id="utpa-vista-general">
+                  <div id="utpa-vista-general-photos" class="vista-general-photos photo-annex-container"></div>
+                </div>
+                <div class="tab-pane fade" id="utpa-anexo">
+                  <div id="utpa-anexo-photos" class="anexo-photos photo-annex-container"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <button class="section-toggle" type="button"><span class="section-label">F. Firmas</span><i class="bi bi-chevron-up toggle-icon"></i></button>
+            <div class="section-body p-0">
+              <table class="print-table mb-0" style="table-layout: fixed;">
+                <tr>
+                  <th style="width: 33%;">Inspector</th>
+                  <th style="width: 33%;">Revisó</th>
+                  <th style="width: 34%;">Aprobó</th>
+                </tr>
+                <tr>
+                  <td style="vertical-align: top;">
+                    <div class="signature-container mb-1"><img id="utpa-img-inspector" class="signature-img" style="max-height: 60px; display: none;"></div>
+                    <input type="text" id="utpa-firma-inspector" class="form-control text-center text-center-print mb-1" list="dl-firmantes">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('utpa-file-inspector').click()"><i class="bi bi-upload"></i> Subir Firma</button>
+                    <input type="file" id="utpa-file-inspector" class="d-none" accept="image/*" onchange="loadSignature(this, 'utpa-img-inspector')">
+                  </td>
+                  <td style="vertical-align: top;">
+                    <div class="signature-container mb-1"><img id="utpa-img-reviso" class="signature-img" style="max-height: 60px; display: none;"></div>
+                    <input type="text" id="utpa-firma-reviso" class="form-control text-center text-center-print mb-1" list="dl-firmantes">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('utpa-file-reviso').click()"><i class="bi bi-upload"></i> Subir Firma</button>
+                    <input type="file" id="utpa-file-reviso" class="d-none" accept="image/*" onchange="loadSignature(this, 'utpa-img-reviso')">
+                  </td>
+                  <td style="vertical-align: top;">
+                    <div class="signature-container mb-1"><img id="utpa-img-aprobo" class="signature-img" style="max-height: 60px; display: none;"></div>
+                    <input type="text" id="utpa-firma-aprobo" class="form-control text-center text-center-print mb-1" list="dl-firmantes">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('utpa-file-aprobo').click()"><i class="bi bi-upload"></i> Subir Firma</button>
+                    <input type="file" id="utpa-file-aprobo" class="d-none" accept="image/*" onchange="loadSignature(this, 'utpa-img-aprobo')">
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Personal Section -->
+    <section id="section-personal" class="content-section d-none">
+      <h2 class="mb-4"><i class="bi bi-people me-2"></i>Gestión de Personal</h2>
+      <div id="personal-container"></div>
+    </section>
+
+    <!-- Equipos Section -->
+    <section id="section-equipos" class="content-section d-none">
+      <h2 class="mb-4"><i class="bi bi-cpu me-2"></i>Gestión de Equipos NDT</h2>
+      <div id="equipos-container"></div>
+    </section>
+
+    <!-- Mecanismos Section -->
+    <section id="section-mecanismos" class="content-section d-none">
+      <h2 class="mb-4"><i class="bi bi-diagram-3 me-2"></i>Mecanismos, Partes y Actividades</h2>
+      <div id="mecanismos-container"></div>
+    </section>
+
+    <!-- Calibraciones Section -->
+    <section id="section-calibraciones" class="content-section d-none">
+      <h2 class="mb-4"><i class="bi bi-calendar-check me-2"></i>Gestión de Calibraciones</h2>
+      <div id="calibraciones-container"></div>
+    </section>
+
+    <!-- Tarifario / AIU Section -->
+    <section id="section-tarifario" class="content-section d-none">
+      <h2 class="mb-4"><i class="bi bi-cash-coin me-2"></i>Tarifario y AIU</h2>
+      <div id="tarifario-container"></div>
+    </section>
+
+    <!-- Procedimientos Section -->
+    <section id="section-procedimientos" class="content-section d-none">
+      <h2 class="mb-4"><i class="bi bi-file-earmark me-2"></i>Procedimientos NDT</h2>
+      <div id="procedimientos-container"></div>
+    </section>
+
+    <!-- Documentación / Lista Maestra Section -->
+    <section id="section-documentacion" class="content-section d-none">
+      <h2 class="mb-4"><i class="bi bi-file-earmark-medical me-2"></i>Documentación / Lista Maestra</h2>
+      <div id="documentacion-container"></div>
+    </section>
+
+    <!-- Formato Scan B Section -->
+    <section id="section-scanb" class="content-section d-none">
+      <div id="scanb-container"></div>
+    </section>
+
+    <!-- Formato LiDAR Section -->
+    <section id="section-lidar" class="content-section d-none">
+      <div id="lidar-container"></div>
+    </section>
+
+    <!-- Solicitudes Almacén Section -->
+    <section id="section-solicitudes" class="content-section d-none">
+      <h2 class="mb-4"><i class="bi bi-box-seam me-2"></i>Solicitudes de Almacén</h2>
+      <div id="solicitudes-container"></div>
+    </section>
+
+    <!-- Fichas de Seguridad Section -->
+    <section id="section-fichas" class="content-section d-none">
+      <h2 class="mb-4"><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Fichas de Datos de Seguridad</h2>
+      <div id="fichas-container"></div>
+    </section>
+
+    <!-- Certificaciones Section -->
+    <section id="section-certificaciones" class="content-section d-none">
+      <h2 class="mb-4"><i class="bi bi-award me-2 textgold"></i>Certificaciones de Personal</h2>
+      <div id="certificaciones-container"></div>
+    </section>
+
+    <!-- HSE / SST Section -->
+    <section id="section-hse" class="content-section d-none">
+      <h2 class="mb-4"><i class="bi bi-shield-check me-2 text-success"></i>HSE / Seguridad y Salud en el Trabajo</h2>
+      <div id="hse-container"></div>
+    </section>
+
+    <!-- Indicadores Section -->
+    <section id="section-indicadores" class="content-section d-none">
+      <h2 class="mb-4"><i class="bi bi-graph-up me-2"></i>Indicadores KPI</h2>
+      <div id="indicadores-container"></div>
+    </section>
+
+    <!-- Integridad Section -->
+    <section id="section-integridad" class="content-section d-none">
+      <h2 class="mb-4"><i class="bi bi-shield-check me-2"></i>Dashboard de Integridad</h2>
+      <div id="integridad-container"></div>
+    </section>
+
+    <!-- Reportes Hub Section -->
+    <section id="section-reportes" class="content-section d-none">
+      <div id="reportes-container"></div>
+    </section>
+
+    <!-- Slide-out Panel for Quick View -->
+    <div id="panel-vista-rapida" class="vista-rapida-panel">
+      <div class="vista-rapida-overlay" onclick="NDT.Reportes.cerrarVistaRapida()"></div>
+      <div class="vista-rapida-sidebar">
+        <div class="vista-rapida-header">
+          <span id="vr-badge" class="badge vr-badge me-2"></span>
+          <span id="vr-title" class="fw-bold flex-grow-1"></span>
+          <button class="btn btn-sm btn-outline-light border-0" onclick="NDT.Reportes.cerrarVistaRapida()">&times;</button>
+        </div>
+        <div id="vr-body" class="vista-rapida-body"></div>
+        <div id="vr-footer" class="vista-rapida-footer"></div>
+      </div>
+    </div>
+
+<!-- Clientes Section -->
+    <section id="section-clientes" class="content-section d-none">
+      <div id="clientes-container"></div>
+    </section>
+
+    <!-- Visitas y Seguimiento Section -->
+    <section id="section-visitas" class="content-section d-none">
+      <div id="visitas-container">
+
+        <!-- HERO -->
+        <header class="vis-hero dash-enter">
+          <div class="vis-hero-left">
+            <div class="vis-hero-mark"><i class="bi bi-calendar2-heart"></i></div>
+            <div>
+              <h3 class="mb-0 vis-hero-title">Visitas y Seguimiento Comercial</h3>
+              <p class="vis-hero-sub mb-0">Tu pipeline de clientes, claro y en movimiento</p>
+            </div>
+          </div>
+          <div class="vis-hero-right">
+            <button class="btn btn-ghost btn-sm" id="vis-btn-limpiar" onclick="window.NDT.Visitas.limpiarFiltros()">
+              <i class="bi bi-x-circle me-1"></i>Limpiar filtros
+            </button>
+            <button class="btn btn-gold btn-sm" id="btn-nueva-visita-hero" onclick="window.NDT.Visitas.nuevaVisitaEnEstado('PROGRAMADA')">
+              <i class="bi bi-plus-circle me-1"></i>Nueva Visita
+            </button>
+          </div>
+        </header>
+
+        <!-- KPI por estado -->
+        <div id="visitas-stats" class="vis-stats dash-enter"></div>
+
+        <!-- Toolbar: vista + filtros -->
+        <div class="card vis-toolbar dash-enter shadow-sm">
+          <div class="card-body py-2">
+            <div class="row g-2 align-items-center">
+              <div class="col-auto">
+                <div class="btn-group btn-group-sm vis-view-toggle" role="group" aria-label="Vista">
+                  <button type="button" class="btn btn-outline-primary active" id="btn-view-kanban" onclick="window.NDT.Visitas.setViewMode('kanban')"><i class="bi bi-grid-3x3-gap-fill me-1"></i>Kanban</button>
+                  <button type="button" class="btn btn-outline-secondary" id="btn-view-list" onclick="window.NDT.Visitas.setViewMode('list')"><i class="bi bi-list-ul me-1"></i>Lista</button>
+                </div>
+              </div>
+              <div class="col-md-2">
+                <select class="form-select form-select-sm" id="visitas-filtro-estado" onchange="window.NDT.Visitas.filtrar()">
+                  <option value="">Estado: todos</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <select class="form-select form-select-sm" id="visitas-filtro-cliente" onchange="window.NDT.Visitas.filtrar()">
+                  <option value="">Cliente: todos</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <input type="date" class="form-control form-control-sm" id="visitas-filtro-desde" onchange="window.NDT.Visitas.filtrar()" title="Desde">
+              </div>
+              <div class="col-md-2">
+                <input type="date" class="form-control form-control-sm" id="visitas-filtro-hasta" onchange="window.NDT.Visitas.filtrar()" title="Hasta">
+              </div>
+              <div class="col-md-2">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                  <input type="text" class="form-control" id="visitas-filtro-busqueda" placeholder="Buscar..." onkeyup="window.NDT.Visitas.filtrarBusqueda(event)">
+                </div>
+              </div>
+              <div class="col-auto ms-auto">
+                <span id="visitas-total-chip" class="badge vis-total-chip rounded-pill">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VISTA KANBAN -->
+        <div id="visitas-kanban-view" class="vis-kanban-wrap dash-enter">
+          <div id="visitas-kanban-board" class="vis-kanban-board"></div>
+        </div>
+
+        <!-- VISTA LISTA -->
+        <div id="visitas-list-view" class="d-none">
+          <div class="card shadow-sm vis-list-card">
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th class="ps-3">Visita</th>
+                      <th>Fecha</th>
+                      <th>Cliente</th>
+                      <th>Objetivo</th>
+                      <th>Estado</th>
+                      <th class="text-end pe-3">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="visitas-tabla-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Nueva/Editar Visita -->
+        <div class="modal fade" id="modal-visita" tabindex="-1" aria-labelledby="modal-visita-title" aria-hidden="true">
+          <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content vis-modal">
+              <div class="modal-header vis-modal-header">
+                <div>
+                  <span class="vis-modal-kicker" id="modal-visita-kicker">NUEVO</span>
+                  <h5 class="modal-title mb-0" id="modal-visita-title"><i class="bi bi-calendar2-plus me-2"></i>Visita comercial</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+              </div>
+              <form id="form-visita">
+                <div class="modal-body">
+                  <input type="hidden" id="visita-id">
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <label class="form-label small text-muted text-uppercase fw-semibold">Código</label>
+                      <input type="text" class="form-control form-control-lg fw-bold" id="visita-codigo" readonly>
+                    </div>
+                    <div class="col-md-8">
+                      <label class="form-label small text-muted text-uppercase fw-semibold">Cliente <span class="text-danger">*</span></label>
+                      <select class="form-select form-select-lg" id="visita-cliente" required>
+                        <option value="">Seleccionar cliente...</option>
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label small text-muted text-uppercase fw-semibold"><i class="bi bi-calendar-event me-1"></i>Fecha <span class="text-danger">*</span></label>
+                      <input type="date" class="form-control" id="visita-fecha" required>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label small text-muted text-uppercase fw-semibold"><i class="bi bi-flag me-1"></i>Estado <span class="text-danger">*</span></label>
+                      <select class="form-select" id="visita-estado" required>
+                        <option value="PROGRAMADA">Programada</option>
+                        <option value="EN_CURSO">En Curso</option>
+                        <option value="COTIZACION">En Cotización</option>
+                        <option value="GANADA">Ganada</option>
+                        <option value="PERDIDA">Perdida</option>
+                        <option value="POSTERGADA">Postergada</option>
+                      </select>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label small text-muted text-uppercase fw-semibold"><i class="bi bi-crosshair me-1"></i>Objetivo <span class="text-danger">*</span></label>
+                      <textarea class="form-control" id="visita-objetivo" rows="2" required placeholder="¿Qué se busca lograr en esta visita?"></textarea>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label small text-muted text-uppercase fw-semibold"><i class="bi bi-sticky me-1"></i>Notas</label>
+                      <textarea class="form-control" id="visita-notas" rows="2" placeholder="Detalles, acuerdos, personas vistas..."></textarea>
+                    </div>
+                    <div class="col-12">
+                      <div class="vis-next-wrap">
+                        <div class="vis-next-title"><i class="bi bi-lightning-charge-fill me-1"></i>Próxima acción / seguimiento</div>
+                        <div class="row g-3 mt-1">
+                          <div class="col-md-6">
+                            <label class="form-label small text-muted">Fecha</label>
+                            <input type="date" class="form-control" id="visita-proxima-accion">
+                          </div>
+                          <div class="col-md-6">
+                            <label class="form-label small text-muted">Qué hay que hacer</label>
+                            <input type="text" class="form-control" id="visita-proxima-desc" placeholder="Ej: Enviar propuesta, llamar, agendar reunión...">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="submit" class="btn btn-gold px-4"><i class="bi bi-check2-circle me-1"></i>Guardar Visita</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Propuestas y Ofertas Section -->
+    <section id="section-propuestas" class="content-section d-none">
+      <div id="propuestas-container"></div>
+    </section>
+
+    <!-- Proyectos Section -->
+<section id="section-proyectos" class="content-section d-none">
+<div id="proyectos-container"></div>
+</section>
+
+<!-- Órdenes de Trabajo Section (Dashboard Canónico) -->
+<section id="section-ordenes" class="content-section d-none">
+<div class="container-fluid">
+<div class="row">
+<div class="col-12">
+<!-- Título y Acciones -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+<div>
+<h3 class="mb-1"><i class="bi bi-briefcase me-2 text-primary"></i>Órdenes de Trabajo</h3>
+<p class="text-muted mb-0 small">Gestiona el ciclo de vida completo de órdenes según flujo canónico</p>
+</div>
+<div class="d-flex gap-2">
+<button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#flujo-ordenes-modal">
+<i class="bi bi-diagram-3 me-1"></i>Ver Flujo
+</button>
+<button class="btn btn-primary" onclick="window.NDT.Ordenes.mostrarFormulario()">
+<i class="bi bi-plus-circle me-1"></i>Nueva Orden
+</button>
+</div>
+</div>
+
+<!-- Filtros Rápidos -->
+<div class="card mb-4 shadow-sm">
+<div class="card-body">
+<div class="row g-3">
+<div class="col-md-3">
+<label class="form-label small">Buscar</label>
+<input type="text" class="form-control form-control-sm" id="ordenes-dashboard-search" 
+placeholder="Código, cliente, proyecto..." 
+onkeyup="window.NDT.Ordenes.filtrarDashboard()">
+</div>
+<div class="col-md-2">
+<label class="form-label small">Estado</label>
+<select class="form-select form-select-sm" id="ordenes-dashboard-estado" onchange="window.NDT.Ordenes.filtrarDashboard()">
+<option value="">Todos</option>
+<option value="BORRADOR">Borrador</option>
+<option value="PENDIENTE_ASIGNACION">Pendiente Asignación</option>
+<option value="ASIGNADO">Asignado</option>
+<option value="EN_PROCESO">En Proceso</option>
+<option value="COMPLETADO">Completado</option>
+<option value="CERRADO">Cerrado</option>
+<option value="CANCELADO">Cancelado</option>
+</select>
+</div>
+<div class="col-md-2">
+<label class="form-label small">Prioridad</label>
+<select class="form-select form-select-sm" id="ordenes-dashboard-prioridad" onchange="window.NDT.Ordenes.filtrarDashboard()">
+<option value="">Todas</option>
+<option value="URGENTE">Urgente</option>
+<option value="ALTA">Alta</option>
+<option value="MEDIA">Media</option>
+<option value="BAJA">Baja</option>
+</select>
+</div>
+<div class="col-md-2">
+<label class="form-label small">Método NDT</label>
+<select class="form-select form-select-sm" id="ordenes-dashboard-metodo" onchange="window.NDT.Ordenes.filtrarDashboard()">
+<option value="">Todos</option>
+<option value="PT">PT - Líquidos Penetrantes</option>
+<option value="MT">MT - Partículas Magnéticas</option>
+<option value="UT">UT - Ultrasonido</option>
+<option value="VT">VT - Inspección Visual</option>
+<option value="UTPA">UTPA - Phased Array</option>
+</select>
+</div>
+<div class="col-md-3">
+<label class="form-label small">&nbsp;</label>
+<div class="d-grid gap-2">
+<button class="btn btn-outline-secondary btn-sm" onclick="window.NDT.Ordenes.limpiarFiltrosDashboard()">
+<i class="bi bi-x-circle me-1"></i>Limpiar Filtros
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Contador de Estados -->
+<div class="row g-3 mb-4">
+<div class="col-md-2">
+<div class="card border-0 shadow-sm text-center">
+<div class="card-body py-3">
+<h4 class="mb-0 text-secondary">0</h4>
+<small class="text-muted">Borrador</small>
+</div>
+</div>
+</div>
+<div class="col-md-2">
+<div class="card border-0 shadow-sm text-center">
+<div class="card-body py-3">
+<h4 class="mb-0 text-warning">0</h4>
+<small class="text-muted">Pendiente</small>
+</div>
+</div>
+</div>
+<div class="col-md-2">
+<div class="card border-0 shadow-sm text-center">
+<div class="card-body py-3">
+<h4 class="mb-0 text-info">0</h4>
+<small class="text-muted">Asignado</small>
+</div>
+</div>
+</div>
+<div class="col-md-2">
+<div class="card border-0 shadow-sm text-center">
+<div class="card-body py-3">
+<h4 class="mb-0 text-primary">0</h4>
+<small class="text-muted">En Proceso</small>
+</div>
+</div>
+</div>
+<div class="col-md-2">
+<div class="card border-0 shadow-sm text-center">
+<div class="card-body py-3">
+<h4 class="mb-0 text-success">0</h4>
+<small class="text-muted">Completado</small>
+</div>
+</div>
+</div>
+<div class="col-md-2">
+<div class="card border-0 shadow-sm text-center">
+<div class="card-body py-3">
+<h4 class="mb-0 text-dark">0</h4>
+<small class="text-muted">Cerrado</small>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Tabla de Órdenes -->
+<div class="card shadow-sm">
+<div class="card-body p-0">
+<div id="ordenes-dashboard-table-container" class="table-responsive">
+<div class="text-center text-muted py-5">
+<i class="bi bi-hourglass-split fs-1"></i>
+<p class="mt-2">Cargando órdenes...</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- Inventario Section -->
+    <section id="section-inventario" class="content-section d-none">
+      <div id="inventario-container"></div>
+    </section>
+
+    <!-- Actividades Section -->
+    <section id="section-actividades" class="content-section d-none">
+      <div id="actividades-container"></div>
+    </section>
+
+    <!-- Programación Section -->
+    <section id="section-programacion" class="content-section d-none">
+      <div id="programacion-container"></div>
+    </section>
+
+    <!-- Recursos Section -->
+    <section id="section-recursos" class="content-section d-none">
+      <div id="recursos-container"></div>
+    </section>
+
+    <!-- Operaciones Section -->
+    <section id="section-operaciones" class="content-section d-none">
+      <div id="operaciones-container"></div>
+    </section>
+
+  </main>
+
+  <!-- Modal Nuevo Reporte (Mejorado) -->
+  <div class="modal fade" id="modal-nuevo-reporte" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg bg-dark text-white">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle-dotted me-2 text-gold"></i>Nuevo Reporte de Inspección</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pt-4">
+          <div class="row g-3">
+            <div class="col-6">
+              <button class="btn btn-outline-light w-100 py-3 d-flex flex-column align-items-center gap-2 border-secondary hover-gold" onclick="App.crearReporte('pt')">
+                <i class="bi bi-droplet-fill text-primary fs-3"></i>
+                <span class="small fw-bold">Líquidos (PT)</span>
+              </button>
+            </div>
+            <div class="col-6">
+              <button class="btn btn-outline-light w-100 py-3 d-flex flex-column align-items-center gap-2 border-secondary hover-gold" onclick="App.crearReporte('mt')">
+                <i class="bi bi-magnet-fill text-danger fs-3"></i>
+                <span class="small fw-bold">Partículas (MT)</span>
+              </button>
+            </div>
+            <div class="col-6">
+              <button class="btn btn-outline-light w-100 py-3 d-flex flex-column align-items-center gap-2 border-secondary hover-gold" onclick="App.crearReporte('ut')">
+                <i class="bi bi-waveform text-success fs-3"></i>
+                <span class="small fw-bold">Ultrasonido (UT)</span>
+              </button>
+            </div>
+            <div class="col-6">
+              <button class="btn btn-outline-light w-100 py-3 d-flex flex-column align-items-center gap-2 border-secondary hover-gold" onclick="App.crearReporte('vt')">
+                <i class="bi bi-eye-fill text-warning fs-3"></i>
+                <span class="small fw-bold">Visual (VT)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <p class="small text-muted mb-0">Seleccione el método de ensayo no destructivo para iniciar.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Herramientas Section (placeholder) -->
+  <section id="section-herramientas" class="content-section d-none">
+    <div class="container-fluid py-3">
+      <div id="herramientas-container"></div>
+    </div>
+  </section>
+
+  <!-- Toast Container -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="toast-main" class="toast" role="alert">
+      <div class="toast-body"></div>
+    </div>
+  </div>
+
+<!-- Scripts -->
+  <script src="vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="vendor/qrcodejs/qrcode.min.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/pdf.js"></script>
+  
+  <!-- Core Logic & Modules -->
+  <script src="js/reportes.js"></script>
+  <script src="js/dashboard.js"></script>
+  
+  <!-- Core Calculations -->
+  <script src="js/core/entities/PTCalculations.js"></script>
+  <script src="js/core/entities/MTCalculations.js"></script>
+  <script src="js/core/entities/UTCalculations.js"></script>
+  <script src="js/core/entities/VTCalculations.js"></script>
+  
+  <!-- Data -->
+  <script src="js/data/CorendtStandards.js"></script>
+  <script src="js/data/PipeSchedules.js"></script>
+  
+  <!-- Form Modules -->
+  <script src="js/pt_form.js"></script>
+  <script src="js/mt_form.js"></script>
+  <script src="js/ut_form.js"></script>
+  <script src="js/vt_form.js"></script>
+  
+  <!-- CORENDT Admin Modules -->
+  <script src="js/orden_workflow.js"></script>
+  <script src="js/gestion_clientes.js"></script>
+  <script src="js/gestion_ordenes.js"></script>
+  <script src="js/gestion_equipos.js"></script>
+  <script src="js/gestion_calibraciones.js"></script>
+  <script src="js/gestion_procedimientos.js"></script>
+  <script src="js/gestion_indicadores.js"></script>
+  <script src="js/backup.js"></script>
+  <script src="js/oferta_modelo.js"></script>
+  <script src="js/assets-embed.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/gestion_tarifario.js"></script>
+  <script src="js/gestion_visitas.js"></script>
+  <script src="js/gestion_propuestas.js"></script>
+  <script src="js/formato_controlado.js"></script>
+  <script src="js/seed-correndt.js"></script>
+  
+  <script src="vendor/mermaid/mermaid.min.js"></script>
+  <script src="js/flujo_ordenes.js"></script>
+  <script src="js/ot_link.js"></script>
+
+  <script src="js/gestion_personal.js"></script>
+  <script src="js/app.js"></script>
+
+<script>
+// Global: loadSignature for signature upload in NDT forms
+function loadSignature(input, imgId) {
+if (!input || !input.files || !input.files[0]) return;
+const file = input.files[0];
+if (file.size > 2 * 1024 * 1024) { return; }
+const reader = new FileReader();
+reader.onload = function(e) {
+const img = document.getElementById(imgId);
+if (!img) return;
+img.src = e.target.result;
+img.style.display = '';
+};
+reader.readAsDataURL(file);
+}
+
+// Global: Handle PDF Import for PT
+function handlePTPDFImport(event) {
+const file = event.target.files[0];
+if (!file) return;
+
+if (window.NDT && window.NDT.PDFImporter) {
+window.NDT.PDFImporter.importPDFWithUI(file, 'pt', 'pt');
+} else {
+alert('El módulo de importación PDF no está cargado. Intente nuevamente.');
+}
+
+// Limpiar input para permitir misma archivo
+event.target.value = '';
+}
+
+// Global: Handle DB Import
+function handleDBImport(event) {
+const file = event.target.files[0];
+if (!file) return;
+
+if (window.NDT && window.NDT.db && window.NDT.db.importDatabaseFromFile) {
+window.NDT.db.importDatabaseFromFile(file)
+.then(() => {
+alert('Base de datos importada exitosamente. La página se recargará.');
+window.location.reload();
+})
+.catch(err => {
+alert('Error al importar: ' + err.message);
+});
+}
+
+event.target.value = '';
+}
+
+// App Tools - Export/Import DB
+const appTools = {
+exportDB: async function() {
+if (window.NDT && window.NDT.db && window.NDT.db.exportDatabaseToFile) {
+try {
+await window.NDT.db.exportDatabaseToFile();
+} catch (err) {
+alert('Error al exportar: ' + err.message);
+}
+}
+}
+};
+window.appTools = appTools;
+
+    // Navigation Handler
+    document.addEventListener('DOMContentLoaded', function() {
+      // Handle nav clicks (including dropdown items)
+      document.addEventListener('click', function(e) {
+        const link = e.target.closest('[data-section]');
+        if (link) {
+          e.preventDefault();
+          const section = link.dataset.section;
+          App.navigate(section);
+          
+          // Close Bootstrap dropdowns
+          document.querySelectorAll('.dropdown.show').forEach(dd => {
+            dd.classList.remove('show');
+            const toggle = dd.querySelector('.dropdown-toggle');
+            if (toggle && toggle.getAttribute('aria-expanded') === 'true') {
+              toggle.setAttribute('aria-expanded', 'false');
+              const menu = dd.querySelector('.dropdown-menu');
+              if (menu) menu.classList.remove('show');
+            }
+          });
+        }
+      });
+      
+      // Initialize dashboard on load
+      App.navigate('dashboard');
+
+      // Register Service Worker for PWA (solo por HTTP/HTTPS)
+      if (window.location.protocol !== 'file:' && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.register('js/sw.js')
+          .then(reg => console.log('[App] Service Worker registered:', reg.scope))
+          .catch(err => console.warn('[App] Service Worker registration failed:', err));
+      }
+    });
+  </script>
+
+<!-- Modal: Diagrama de Flujo - Orden de Servicio (8 tabs) -->
+<div id="flujo-ordenes-modal" class="modal fade" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title"><i class="bi bi-diagram-3 me-2"></i><span id="flujo-orden-title">Orden de Servicio</span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-0">
+        <nav class="nav nav-tabs flujo-tabs" role="tablist" id="flujo-orden-tabs">
+          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-diagrama" type="button" role="tab">
+            <i class="bi bi-diagram-3"></i> Diagrama
+          </button>
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-general" type="button" role="tab">
+            <i class="bi bi-info-circle"></i> General
+          </button>
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-asignacion" type="button" role="tab">
+            <i class="bi bi-people"></i> Asignaci&oacute;n
+          </button>
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-servicios" type="button" role="tab">
+            <i class="bi bi-tools"></i> Servicios NDT
+          </button>
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-ejecucion" type="button" role="tab">
+            <i class="bi bi-play-circle"></i> Ejecuci&oacute;n
+          </button>
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-documentos" type="button" role="tab">
+            <i class="bi bi-file-earmark-text"></i> Documentos
+          </button>
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-facturacion" type="button" role="tab">
+            <i class="bi bi-currency-dollar"></i> Facturaci&oacute;n
+          </button>
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-historial" type="button" role="tab">
+            <i class="bi bi-clock-history"></i> Historial
+          </button>
+        </nav>
+
+        <div class="tab-content p-3" id="flujo-orden-tab-content">
+
+          <!-- TAB 1: Diagrama -->
+          <div class="tab-pane fade show active" id="tab-diagrama" role="tabpanel">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="text-muted small">Diagrama de flujo de estados de la orden de servicio</span>
+              <span id="flujo-orden-estado-badge" class="badge"></span>
+            </div>
+            <div id="flujo-ordenes-container" class="flujo-mermaid-container"></div>
+          </div>
+
+          <!-- TAB 2: Informaci&oacute;n General -->
+          <div class="tab-pane fade" id="tab-general" role="tabpanel">
+            <div class="row g-3">
+              <div class="col-md-4"><label class="fw-bold text-muted small">C&oacute;digo</label><p id="fg-codigo" class="mb-0 h5 text-primary">-</p></div>
+              <div class="col-md-4"><label class="fw-bold text-muted small">Cliente</label><p id="fg-cliente" class="mb-0">-</p></div>
+              <div class="col-md-4"><label class="fw-bold text-muted small">Proyecto</label><p id="fg-proyecto" class="mb-0">-</p></div>
+              <div class="col-md-3"><label class="fw-bold text-muted small">Prioridad</label><p id="fg-prioridad" class="mb-0">-</p></div>
+              <div class="col-md-3"><label class="fw-bold text-muted small">Fecha Solicitud</label><p id="fg-fecha-solicitud" class="mb-0">-</p></div>
+              <div class="col-md-3"><label class="fw-bold text-muted small">Fecha Inspecci&oacute;n</label><p id="fg-fecha-inspeccion" class="mb-0">-</p></div>
+              <div class="col-md-3"><label class="fw-bold text-muted small">Fecha Entrega</label><p id="fg-fecha-entrega" class="mb-0">-</p></div>
+              <div class="col-md-4"><label class="fw-bold text-muted small">Duraci&oacute;n Estimada</label><p id="fg-duracion" class="mb-0">-</p></div>
+              <div class="col-md-4"><label class="fw-bold text-muted small">Cotizaci&oacute;n</label><p id="fg-cotizacion" class="mb-0">-</p></div>
+              <div class="col-md-4"><label class="fw-bold text-muted small">Estado</label><p id="fg-estado" class="mb-0">-</p></div>
+              <div class="col-12"><label class="fw-bold text-muted small">Descripci&oacute;n</label><p id="fg-descripcion" class="mb-0 text-muted">-</p></div>
+            </div>
+          </div>
+
+          <!-- TAB 3: Asignaci&oacute;n -->
+          <div class="tab-pane fade" id="tab-asignacion" role="tabpanel">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <h6 class="border-bottom pb-2"><i class="bi bi-person-badge me-1"></i>Responsable</h6>
+                <p id="asig-responsable" class="mb-0">-</p>
+              </div>
+              <div class="col-md-6">
+                <h6 class="border-bottom pb-2"><i class="bi bi-people me-1"></i>Personal Asignado</h6>
+                <div id="asig-personal"><p class="text-muted small">Sin personal asignado</p></div>
+              </div>
+              <div class="col-12">
+                <h6 class="border-bottom pb-2"><i class="bi bi-hdd-stack me-1"></i>Equipos Asignados</h6>
+                <div id="asig-equipos"><p class="text-muted small">Sin equipos asignados</p></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 4: Servicios NDT -->
+          <div class="tab-pane fade" id="tab-servicios" role="tabpanel">
+            <h6 class="border-bottom pb-2"><i class="bi bi-tools me-1"></i>M&eacute;todos NDT Solicitados</h6>
+            <div id="srv-lista" class="mb-3"><p class="text-muted small">Sin servicios seleccionados</p></div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <h6 class="border-bottom pb-2">Normas Aplicables</h6>
+                <div id="srv-normas"><p class="text-muted small">-</p></div>
+              </div>
+              <div class="col-md-6">
+                <h6 class="border-bottom pb-2">Procedimientos</h6>
+                <div id="srv-procedimientos"><p class="text-muted small">-</p></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 5: Ejecuci&oacute;n -->
+          <div class="tab-pane fade" id="tab-ejecucion" role="tabpanel">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <h6 class="border-bottom pb-2"><i class="bi bi-graph-up me-1"></i>Avance</h6>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="progress flex-grow-1" style="height:20px">
+                    <div id="ejec-avance-bar" class="progress-bar" role="progressbar" style="width:0%">0%</div>
+                  </div>
+                  <span id="ejec-avance-text" class="fw-bold">0%</span>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h6 class="border-bottom pb-2">Reportes Vinculados</h6>
+                <div id="ejec-reportes"><p class="text-muted small">Sin reportes</p></div>
+              </div>
+              <div class="col-12">
+                <h6 class="border-bottom pb-2">Resultados</h6>
+                <div id="ejec-resultados"><p class="text-muted small">-</p></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 6: Documentos -->
+          <div class="tab-pane fade" id="tab-documentos" role="tabpanel">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <h6 class="border-bottom pb-2"><i class="bi bi-paperclip me-1"></i>Adjuntos</h6>
+                <div id="doc-adjuntos"><p class="text-muted small">Sin archivos adjuntos</p></div>
+              </div>
+              <div class="col-md-6">
+                <h6 class="border-bottom pb-2"><i class="bi bi-award me-1"></i>Certificados</h6>
+                <div id="doc-certificados"><p class="text-muted small">Sin certificados</p></div>
+              </div>
+              <div class="col-12">
+                <h6 class="border-bottom pb-2"><i class="bi bi-file-earmark-check me-1"></i>Entrega de Informes</h6>
+                <div id="doc-entrega-informes" class="row g-2">
+                  <div class="col-md-3"><label class="fw-bold text-muted small">Estado</label><p id="doc-entrega-estado" class="mb-0">-</p></div>
+                  <div class="col-md-3"><label class="fw-bold text-muted small">Fecha</label><p id="doc-entrega-fecha" class="mb-0">-</p></div>
+                  <div class="col-md-3"><label class="fw-bold text-muted small">Medio</label><p id="doc-entrega-medio" class="mb-0">-</p></div>
+                  <div class="col-md-3"><label class="fw-bold text-muted small">Destinatario</label><p id="doc-entrega-destinatario" class="mb-0">-</p></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 7: Facturaci&oacute;n -->
+          <div class="tab-pane fade" id="tab-facturacion" role="tabpanel">
+            <div class="row g-3">
+              <div class="col-md-4"><label class="fw-bold text-muted small">Estado Facturaci&oacute;n</label><p id="fac-estado" class="mb-0">-</p></div>
+              <div class="col-md-4"><label class="fw-bold text-muted small">N&uacute;mero Factura</label><p id="fac-numero" class="mb-0">-</p></div>
+              <div class="col-md-4"><label class="fw-bold text-muted small">Comunicaci&oacute;n a Fact.</label><p id="fac-fecha-comunicacion" class="mb-0">-</p></div>
+            </div>
+          </div>
+
+          <!-- TAB 8: Historial -->
+          <div class="tab-pane fade" id="tab-historial" role="tabpanel">
+            <h6 class="border-bottom pb-2"><i class="bi bi-clock-history me-1"></i>L&iacute;nea de tiempo de cambios de estado</h6>
+            <div id="historial-timeline"><p class="text-muted small">Sin historial registrado</p></div>
+          </div>
+
+        </div><!-- /.tab-content -->
+      </div><!-- /.modal-body -->
+      <div class="modal-footer d-flex justify-content-between">
+        <span class="text-muted small" id="flujo-orden-id-info"></span>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body></html>

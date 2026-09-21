@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoliWel NDT - Poblar Base de Datos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        .card-header { background: linear-gradient(135deg, #0f3460 0%, #16213e 100%); border-radius: 15px 15px 0 0 !important; }
+        .btn-primary { background: linear-gradient(135deg, #e94560 0%, #0f3460 100%); border: none; }
+        .btn-primary:hover { background: linear-gradient(135deg, #ff6b6b 0%, #0f3460 100%); }
+        .progress { height: 25px; border-radius: 10px; }
+        .progress-bar { font-weight: bold; }
+        .store-item { transition: all 0.3s ease; }
+        .store-item:hover { transform: translateX(5px); }
+        .store-item.completed { opacity: 0.6; text-decoration: line-through; }
+        .log-area { max-height: 400px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 12px; }
+        .log-entry { border-left: 3px solid #e94560; padding-left: 10px; margin-bottom: 5px; }
+        .log-success { border-left-color: #28a745; }
+        .log-error { border-left-color: #dc3545; }
+    </style>
+</head>
+<body class="text-white">
+    <div class="container py-5">
+        <div class="card">
+            <div class="card-header text-center py-4">
+                <h2 class="mb-0">SoliWel NDT - Poblador de Base de Datos</h2>
+                <p class="mb-0 text-white-50">Seed Database Script</p>
+            </div>
+            <div class="card-body p-4">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h5 class="mb-3">Progreso</h5>
+                        <div class="progress mb-3">
+                            <div id="progressBar" class="progress-bar bg-success" style="width: 0%">0%</div>
+                        </div>
+                        <div id="storesList" class="list-group"></div>
+                    </div>
+                    <div class="col-md-8">
+                        <h5 class="mb-3">Log de Operaciones</h5>
+                        <div id="logArea" class="log-area bg-dark p-3 rounded text-white-50"></div>
+                    </div>
+                </div>
+                <div class="mt-4 text-center">
+                    <button id="btnSeed" class="btn btn-primary btn-lg px-5">
+                        Iniciar Población de Datos
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/db.js"></script>
+    <script>
+        const stores = [
+            { name: 'swell_clientes', items: getClientes() },
+            { name: 'swell_proyectos', items: getProyectos() },
+            { name: 'swell_ordenes', items: getOrdenes() },
+            { name: 'swell_personal', items: getPersonal() },
+            { name: 'swell_equipos', items: getEquipos() },
+            { name: 'swell_calibraciones', items: getCalibraciones() },
+            { name: 'swell_certificaciones', items: getCertificaciones() },
+            { name: 'swell_procedimientos', items: getProcedimientos() },
+            { name: 'swell_indicadores', items: getIndicadores() },
+            { name: 'swell_inventario_almacen', items: getInventario() },
+            { name: 'swell_solicitudes_almacen', items: getSolicitudes() },
+            { name: 'swell_actividades', items: getActividades() },
+            { name: 'swell_recursos_asignados', items: getRecursos() },
+            { name: 'swell_programacion', items: getProgramacion() },
+            { name: 'swell_fichas_seguridad', items: getFichasSeguridad() }
+        ];
+
+        let totalItems = 0;
+        let processedItems = 0;
+
+        function log(message, type = 'info') {
+            const area = document.getElementById('logArea');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            area.appendChild(entry);
+            area.scrollTop = area.scrollHeight;
+        }
+
+        function updateProgress() {
+            const pct = Math.round((processedItems / totalItems) * 100);
+            document.getElementById('progressBar').style.width = pct + '%';
+            document.getElementById('progressBar').textContent = pct + '%';
+        }
+
+        function markStoreCompleted(name) {
+            const el = document.querySelector(`[data-store="${name}"]`);
+            if (el) el.classList.add('completed');
+        }
+
+        // ============ DATOS DE EJEMPLO ============
+
+        // ============ PERSONAL ============
+        function getPersonal() {
+            return [
+                { codigo: 'PER-001', nombre: 'Juan Pérez García', cargo: 'Inspector NDT Nivel II', especialidad: 'PT,MT,UT', certificacion: 'ASNT SNT-TC-1A', estado: 'ACTIVO', telefono: '987654321', email: 'jperez@soliwel.com', fecha_ingreso: '2020-03-15' },
+                { codigo: 'PER-002', nombre: 'María López Díaz', cargo: 'Inspector NDT Nivel II', especialidad: 'PT,VT', certificacion: 'ASNT SNT-TC-1A', estado: 'ACTIVO', telefono: '987654322', email: 'mlopez@soliwel.com', fecha_ingreso: '2021-06-01' },
+                { codigo: 'PER-003', nombre: 'Carlos Mendoza Silva', cargo: 'Inspector NDT Nivel II', especialidad: 'UT,PAUT', certificacion: 'ASNT SNT-TC-1A', estado: 'ACTIVO', telefono: '987654323', email: 'cmendoza@soliwel.com', fecha_ingreso: '2019-01-10' },
+                { codigo: 'PER-004', nombre: 'Ana García Torres', cargo: 'Inspector NDT Nivel I', especialidad: 'PT,MT', certificacion: 'ASNT SNT-TC-1A', estado: 'ACTIVO', telefono: '987654324', email: 'agarcia@soliwel.com', fecha_ingreso: '2022-08-20' },
+                { codigo: 'PER-005', nombre: 'Roberto Díaz Vargas', cargo: 'Técnico NDT', especialidad: 'PT,MT', certificacion: 'INTERNO', estado: 'ACTIVO', telefono: '987654325', email: 'rdiaz@soliwel.com', fecha_ingreso: '2023-02-15' },
+                { codigo: 'PER-006', nombre: 'Pedro Ramírez Castro', cargo: 'Ingeniero NDT Nivel III', especialidad: 'PT,MT,UT,VT', certificacion: 'ASNT SNT-TC-1A', estado: 'ACTIVO', telefono: '987654326', email: 'pramirez@soliwel.com', fecha_ingreso: '2018-05-01' },
+                { codigo: 'PER-007', nombre: 'Carmen Torres Flores', cargo: 'Inspector NDT Nivel II', especialidad: 'VT,PT', certificacion: 'ASNT SNT-TC-1A', estado: 'ACTIVO', telefono: '987654327', email: 'ctorres@soliwel.com', fecha_ingreso: '2020-11-01' },
+                { codigo: 'PER-008', nombre: 'Luis Hernández Martínez', cargo: 'Técnico de Campo', especialidad: 'PT', certificacion: 'INTERNO', estado: 'ACTIVO', telefono: '987654328', email: 'lhernandez@soliwel.com', fecha_ingreso: '2023-09-01' }
+            ];
+        }
+
+        function getClientes() {
+            return [
+                { codigo: 'CLI-001', nombre: 'Petrobras', razon_social: 'Petrobras Energia S.A.', ruc: '20123456789', direccion: 'Av. Alfredo Rocky 1234, Lima', telefono: '01-234-5678', email: 'contacto@petrobras.pe', contacto: 'Ing. Carlos Mendoza', estado: 'ACTIVO' },
+                { codigo: 'CLI-002', nombre: 'Repsol', razon_social: 'Repsol Comercial S.A.C.', ruc: '20198765432', direccion: 'Av. Javier Prado 4567, Lima', telefono: '01-876-5432', email: 'operaciones@repsol.pe', contacto: 'Sra. Ana García', estado: 'ACTIVO' },
+                { codigo: 'CLI-003', nombre: 'Pluspetrol', razon_social: 'Pluspetrol Peru Corporation S.A.', ruc: '20111223344', direccion: 'Calle Las Palmeras 890, Lima', telefono: '01-445-6677', email: 'proyectos@pluspetrol.pe', contacto: 'Ing. Roberto Silva', estado: 'ACTIVO' },
+                { codigo: 'CLI-004', nombre: 'Graña y Montero', razon_social: 'Graña y Montero S.A.A.', ruc: '20155443322', direccion: 'Av. Republica de Panama 1234, Lima', telefono: '01-332-2211', email: 'servicios@gym.pe', contacto: 'Lic. María Fernández', estado: 'ACTIVO' },
+                { codigo: 'CLI-005', nombre: 'Odebrecht', razon_social: 'Odebrecht Peru Ingenieria S.A.C.', ruc: '20166778899', direccion: 'Av. Camino Real 567, Lima', telefono: '01-998-8776', email: 'proyectos@odebrecht.pe', contacto: 'Ing. Pedro Ramírez', estado: 'INACTIVO' }
+            ];
+        }
+
+        function getProyectos() {
+            return [
+                { codigo: 'PROY-001', nombre: 'Proyecto Camisea Fase III', cliente_id: 1, cliente_nombre: 'Pluspetrol', ubicacion: 'Cusco', descripcion: 'Inspección NDT en lineas de conducción de gas', estado: 'EN_PROCESO', fecha_inicio: '2024-01-15', fecha_fin: '2024-12-31' },
+                { codigo: 'PROY-002', nombre: 'Refineria Talara - Mantenimiento', cliente_id: 2, cliente_nombre: 'Petrobras', ubicacion: 'Talara, Piura', descripcion: 'Mantenimiento preventivo de tanques de almacenamiento', estado: 'EN_PROCESO', fecha_inicio: '2024-03-01', fecha_fin: '2024-08-31' },
+                { codigo: 'PROY-003', nombre: 'Planta de Tratamiento Ilo', cliente_id: 3, cliente_nombre: 'Repsol', ubicacion: 'Ilo, Moquegua', descripcion: 'Inspección de recipientes a presión', estado: 'PENDIENTE', fecha_inicio: '2024-06-01', fecha_fin: '2024-11-30' },
+                { codigo: 'PROY-004', nombre: 'Oleoducto Norperuano', cliente_id: 1, cliente_nombre: 'Petrobras', ubicacion: 'Loreto', descripcion: 'Evaluación de integridad de ductos', estado: 'COMPLETADO', fecha_inicio: '2023-06-01', fecha_fin: '2024-02-28' },
+                { codigo: 'PROY-005', nombre: 'Central Termica Ventanilla', cliente_id: 4, cliente_nombre: 'Graña y Montero', ubicacion: 'Ventanilla, Callao', descripcion: 'Inspección de calderos y recipientes', estado: 'EN_PROCESO', fecha_inicio: '2024-02-01', fecha_fin: '2024-07-31' }
+            ];
+        }
+
+        function getOrdenes() {
+            return [
+                { 
+                    codigo: 'OT-2024-0001', 
+                    cliente: 'Pluspetrol', 
+                    proyecto: 'Proyecto Camisea Fase III', 
+                    proyecto_id: 1,
+                    cotizacion: 'COT-2024-001',
+                    descripcion: 'PT y UT en soldaduras de línea de 24" - 50 juntas críticas',
+                    estado: 'PENDIENTE', 
+                    prioridad: 'ALTA', 
+                    fecha_solicitud: '2024-04-01',
+                    fecha_inspeccion: '2024-04-15',
+                    fecha_entrega: '2024-04-22',
+                    servicios: ['PT', 'UT'],
+                    responsable: 'Ing. Juan Pérez',
+                    inspector_1: 'Ing. Juan Pérez',
+                    inspector_2: 'Ing. Carlos Mendoza',
+                    tecnico_aux: 'Tec. Luis Hernández',
+                    herramientas: 'DMS GO, Caja de Palpadores, Acoplante, Extintor',
+                    duracion_dias: 5,
+                    observaciones: 'Coordinar acceso con seguridad de Pluspetrol'
+                },
+                { 
+                    codigo: 'OT-2024-0002', 
+                    cliente: 'Petrobras', 
+                    proyecto: 'Refinería Talara - Mantenimiento', 
+                    proyecto_id: 2,
+                    cotizacion: 'COT-2024-002',
+                    descripcion: 'MT en tanque TK-101 y líneas de transferencia',
+                    estado: 'EN_EJECUCION', 
+                    prioridad: 'ALTA', 
+                    fecha_solicitud: '2024-03-15',
+                    fecha_inspeccion: '2024-04-10',
+                    fecha_entrega: '2024-04-30',
+                    servicios: ['MT'],
+                    responsable: 'Ing. María López',
+                    inspector_1: 'Sra. María López',
+                    inspector_2: 'Ing. Ana García',
+                    tecnico_aux: 'Tec. Pedro Ramírez',
+                    herramientas: 'Magnaflux Y-2, Gratas de acero, Tintas, Reveladores',
+                    duracion_dias: 3,
+                    observaciones: 'Trabajo en altura - requerir arnés'
+                },
+                { 
+                    codigo: 'OT-2024-0003', 
+                    cliente: 'Repsol', 
+                    proyecto: 'Planta de Tratamiento Ilo', 
+                    proyecto_id: 3,
+                    cotizacion: 'COT-2024-003',
+                    descripcion: 'VT y PT en recipientes VRU-01 y VRU-02',
+                    estado: 'PROGRAMADO', 
+                    prioridad: 'MEDIA', 
+                    fecha_solicitud: '2024-05-01',
+                    fecha_inspeccion: '2024-05-15',
+                    fecha_entrega: '2024-05-22',
+                    servicios: ['VT', 'PT'],
+                    responsable: 'Ing. Roberto Díaz',
+                    inspector_1: 'Ing. Roberto Díaz',
+                    inspector_2: 'Sra. Carmen Torres',
+                    tecnico_aux: 'Tec. Ana López',
+                    herramientas: 'Viking V5, Luptec L-WH30, Solar 400',
+                    duracion_dias: 4,
+                    observaciones: 'Recipientes de almacenamiento de productos refinados'
+                },
+                { 
+                    codigo: 'OT-2024-0004', 
+                    cliente: 'Graña y Montero', 
+                    proyecto: 'Central Térmica Ventanilla', 
+                    proyecto_id: 5,
+                    cotizacion: 'COT-2024-004',
+                    descripcion: 'UT en caldero CB-500 - evaluación de integridad',
+                    estado: 'COMPLETADO', 
+                    prioridad: 'URGENTE', 
+                    fecha_solicitud: '2024-02-10',
+                    fecha_inspeccion: '2024-02-20',
+                    fecha_entrega: '2024-03-05',
+                    servicios: ['UT', 'MED_ESPESORES'],
+                    responsable: 'Ing. Carlos Mendoza',
+                    inspector_1: 'Ing. Carlos Mendoza',
+                    inspector_2: '',
+                    tecnico_aux: '',
+                    herramientas: 'DMS GO, Yugatron 4000, Caja de Palpadores',
+                    duracion_dias: 7,
+                    observaciones: 'Inspección completada - reporte aprobado'
+                },
+                { 
+                    codigo: 'OT-2024-0005', 
+                    cliente: 'Pluspetrol', 
+                    proyecto: 'Proyecto Camisea Fase III', 
+                    proyecto_id: 1,
+                    cotizacion: 'COT-2024-005',
+                    descripcion: 'Medición de espesores en línea de 18" - 100 puntos',
+                    estado: 'EN_REVISION', 
+                    prioridad: 'ALTA', 
+                    fecha_solicitud: '2024-03-20',
+                    fecha_inspeccion: '2024-04-01',
+                    fecha_entrega: '2024-04-15',
+                    servicios: ['MED_ESPESORES'],
+                    responsable: 'Ing. Juan Pérez',
+                    inspector_1: 'Ing. Juan Pérez',
+                    inspector_2: '',
+                    tecnico_aux: 'Tec. Luis Hernández',
+                    herramientas: 'DMS GO, Yoyo Medidor, Arnés, Tie Off',
+                    duracion_dias: 10,
+                    observaciones: 'En revisión por ingeniería del cliente'
+                },
+                // Ordenes con herramientas específicas para los proyectos mencionados
+                { 
+                    codigo: 'OT-2024-0006', 
+                    cliente: 'Petrobras', 
+                    proyecto: 'Mantenimiento General', 
+                    proyecto_id: 2,
+                    cotizacion: 'COT-2024-006',
+                    descripcion: 'PT en Soldaduras - Proyecto Poleas',
+                    estado: 'PENDIENTE', 
+                    prioridad: 'ALTA', 
+                    fecha_solicitud: '2024-04-15',
+                    fecha_inspeccion: '2024-04-20',
+                    fecha_entrega: '2024-04-27',
+                    servicios: ['PT'],
+                    responsable: 'Ing. Juan Pérez',
+                    inspector_1: 'Ing. Juan Pérez',
+                    inspector_2: '',
+                    tecnico_aux: 'Tec. Luis Hernández',
+                    herramientas: 'Extintor(1), Pulidora(2), Gratas(5), Tivet(4), Tintas(2), Reveladores(3), Espátula(1), Marcador de metal(1), Trapo(suficiente), Aspersor 5L(1), Cámara fotográfica(1), Piqueta(1), Escoba(sin palo)(1)',
+                    duracion_dias: 2,
+                    observaciones: 'Kit completo para PT en campo'
+                },
+                { 
+                    codigo: 'OT-2024-0007', 
+                    cliente: 'Pluspetrol', 
+                    proyecto: 'Medición de Espesores - Scan B', 
+                    proyecto_id: 1,
+                    cotizacion: 'COT-2024-007',
+                    descripcion: 'Medición de espesores Scan B en ductos',
+                    estado: 'PENDIENTE', 
+                    prioridad: 'MEDIA', 
+                    fecha_solicitud: '2024-04-10',
+                    fecha_inspeccion: '2024-04-25',
+                    fecha_entrega: '2024-05-02',
+                    servicios: ['MED_ESPESORES'],
+                    responsable: 'Ing. Carlos Mendoza',
+                    inspector_1: 'Ing. Carlos Mendoza',
+                    inspector_2: '',
+                    tecnico_aux: 'Tec. Luis Hernández',
+                    herramientas: 'DMS GO, Caja de Palpadores, Acoplante(suficiente), Arnés(2), Tie Off(1), Yoyo(1), Eslingas con absorbedor(2)',
+                    duracion_dias: 3,
+                    observaciones: 'Trabajo en altura - requieren 2 arneses'
+                }
+            ];
+        }
+
+        function getEquipos() {
+            return [
+                // Equipos NDT principales
+                { codigo: 'EQ-001', nombre: 'DMS GO', tipo: 'EQUIPO_UT', marca: 'Olympus', modelo: 'DMS GO', serie: 'OM-2024-001', estado: 'OPERATIVO', ubicacion: 'Almacen Lima', fecha_adquisicion: '2024-01-15', observaciones: 'Ultrasonido portable para medición de espesores' },
+                { codigo: 'EQ-002', nombre: 'Yugatron 4000', tipo: 'EQUIPO_UT', marca: 'Olympus', modelo: 'Yugatron 4000', serie: 'YG-2020-001', estado: 'OPERATIVO', ubicacion: 'Almacen Lima', fecha_adquisicion: '2020-06-15', observaciones: 'Equipo principal para UT manual' },
+                { codigo: 'EQ-003', nombre: 'Magnaflux Y-2', tipo: 'EQUIPO_MT', marca: 'Magnaflux', modelo: 'Y-2', serie: 'MF-2019-045', estado: 'OPERATIVO', ubicacion: 'Almacen Lima', fecha_adquisicion: '2019-03-10', observaciones: 'Yugo electromagnético' },
+                { codigo: 'EQ-004', nombre: 'Luptec L-WH30', tipo: 'EQUIPO_PT', marca: 'Luptec', modelo: 'L-WH30', serie: 'LT-2021-012', estado: 'OPERATIVO', ubicacion: 'Campo Camisea', fecha_adquisicion: '2021-08-20', observaciones: 'Equipo para PT en campo' },
+                { codigo: 'EQ-005', nombre: 'Viking V5', tipo: 'EQUIPO_VT', marca: 'Eddyfi', modelo: 'Viking V5', serie: 'ED-2022-008', estado: 'EN_CALIBRACION', ubicacion: 'Laboratorio', fecha_adquisicion: '2022-01-05', observaciones: 'Endoscopio industrial en calibración' },
+                { codigo: 'EQ-006', nombre: 'OmniScan X3', tipo: 'EQUIPO_UT', marca: 'Olympus', modelo: 'OmniScan X3', serie: 'OM-2023-003', estado: 'OPERATIVO', ubicacion: 'Almacen Lima', fecha_adquisicion: '2023-02-28', observaciones: 'Equipo Phased Array' },
+                { codigo: 'EQ-007', nombre: 'Barkhausen BA-20', tipo: 'EQUIPO_MT', marca: 'Kraft', modelo: 'BA-20', serie: 'KR-2018-022', estado: 'FUERA_DE_SERVICIO', ubicacion: 'Taller', fecha_adquisicion: '2018-11-30', observaciones: 'En reparación - bobina dañada' },
+                { codigo: 'EQ-008', nombre: 'Solar 400', tipo: 'EQUIPO_PT', marca: 'Magnaflux', modelo: 'Solar 400', serie: 'MF-2020-017', estado: 'OPERATIVO', ubicacion: 'Almacen Lima', fecha_adquisicion: '2020-09-12', observaciones: 'Lámpara UV-A de alta intensidad' },
+                { codigo: 'EQ-009', nombre: 'RFEC Flawfinder', tipo: 'EQUIPO_MT', marca: 'Rotahek', modelo: 'RFEC Flawfinder', serie: 'RT-2021-006', estado: 'OPERATIVO', ubicacion: 'Campo Talara', fecha_adquisicion: '2021-04-18', observaciones: 'Equipo para MT en piezas ferromagnéticas' },
+                // Herramientas y Accesorios para proyectos específicos
+                { codigo: 'HERR-001', nombre: 'Caja de Palpadores con Cables', tipo: 'HERRAMIENTA', marca: 'Generico', modelo: 'Standard', serie: 'GEN-2024-001', estado: 'OPERATIVO', ubicacion: 'Almacen Lima', fecha_adquisicion: '2024-01-01', observaciones: 'Caja completa con cables para UT' },
+                { codigo: 'HERR-002', nombre: 'Acoplante', tipo: 'CONSUMIBLE', marca: 'Sonogel', modelo: 'Gel', serie: 'CON-2024-001', estado: 'OPERATIVO', ubicacion: 'Almacen Lima', fecha_adquisicion: '2024-01-01', observaciones: 'Suficiente para varios proyectos' },
+                { codigo: 'HERR-003', nombre: 'Pulidora Inalámbrica', tipo: 'HERRAMIENTA', marca: 'DeWalt', modelo: 'DWP849X', serie: 'DW-2023-045', estado: 'OPERATIVO', ubicacion: 'Taller', fecha_adquisicion: '2023-06-15', observaciones: 'Para preparación de superficie PT/MT' },
+                { codigo: 'HERR-004', nombre: 'Arnés de Seguridad', tipo: 'EPP', marca: '3M', modelo: 'Protege', serie: 'EPP-2023-001', estado: 'OPERATIVO', ubicacion: 'Almacen Campo', fecha_adquisicion: '2023-01-01', observaciones: 'Para trabajos en altura - medición de espesores' },
+                { codigo: 'HERR-005', nombre: 'Tie Off / Eslinga', tipo: 'EPP', marca: 'Miller', modelo: 'Titan', serie: 'EPP-2023-002', estado: 'OPERATIVO', ubicacion: 'Almacen Campo', fecha_adquisicion: '2023-01-01', observaciones: 'Para trabajos en altura' },
+                { codigo: 'HERR-006', nombre: 'Yoyo Medidor', tipo: 'HERRAMIENTA', marca: 'Olympus', modelo: 'MiniMax', serie: 'OM-2022-015', estado: 'OPERATIVO', ubicacion: 'Almacen Lima', fecha_adquisicion: '2022-08-10', observaciones: 'Para medición de espesores con DMS GO' },
+                { codigo: 'HERR-007', nombre: 'Extintor', tipo: 'EPP', marca: 'Kidde', modelo: 'ABC 5kg', serie: 'EXT-2023-001', estado: 'OPERATIVO', ubicacion: 'Vehiculo', fecha_adquisicion: '2023-01-01', observaciones: 'Para trabajos de PT en campo' },
+                { codigo: 'HERR-008', nombre: 'Gratas de Acero', tipo: 'CONSUMIBLE', marca: 'Generico', modelo: 'Standard', serie: 'CON-2024-002', estado: 'OPERATIVO', ubicacion: 'Almacen Campo', fecha_adquisicion: '2024-01-01', observaciones: 'Para limpieza MT - juego de 5' },
+                { codigo: 'HERR-009', nombre: 'Tivyt / Tintas', tipo: 'CONSUMIBLE', marca: 'Magnaflux', modelo: 'Series II', serie: 'CON-2024-003', estado: 'OPERATIVO', ubicacion: 'Almacen Campo', fecha_adquisicion: '2024-01-01', observaciones: 'Tintas visibles para MT' },
+                { codigo: 'HERR-010', nombre: 'Reveladores', tipo: 'CONSUMIBLE', marca: 'Magnaflux', modelo: 'Dry', serie: 'CON-2024-004', estado: 'OPERATIVO', ubicacion: 'Almacen Campo', fecha_adquisicion: '2024-01-01', observaciones: 'Reveladores en aerosol' },
+                { codigo: 'HERR-011', nombre: 'Espátula', tipo: 'HERRAMIENTA', marca: 'Generico', modelo: 'Standard', serie: 'HER-2024-001', estado: 'OPERATIVO', ubicacion: 'Almacen Campo', fecha_adquisicion: '2024-01-01', observaciones: 'Para aplicación de reveladores' },
+                { codigo: 'HERR-012', nombre: 'Marcador de Metal', tipo: 'HERRAMIENTA', marca: 'Markal', modelo: 'Pro-Mark', serie: 'HER-2024-002', estado: 'OPERATIVO', ubicacion: 'Almacen Campo', fecha_adquisicion: '2024-01-01', observaciones: 'Marcador industrial' },
+                { codigo: 'HERR-013', nombre: 'Trapo Industrial', tipo: 'CONSUMIBLE', marca: 'Generico', modelo: 'Standard', serie: 'CON-2024-005', estado: 'OPERATIVO', ubicacion: 'Almacen Campo', fecha_adquisicion: '2024-01-01', observaciones: 'Suficiente para limpieza' },
+                { codigo: 'HERR-014', nombre: 'Aspersor 5L', tipo: 'HERRAMIENTA', marca: 'Generico', modelo: 'Standard', serie: 'HER-2024-003', estado: 'OPERATIVO', ubicacion: 'Almacen Campo', fecha_adquisicion: '2024-01-01', observations: 'Para aplicación de reveladores acuosos' },
+                { codigo: 'HERR-015', nombre: 'Cámara Fotográfica', tipo: 'EQUIPO', marca: 'Canon', modelo: 'EOS R50', serie: 'CN-2024-001', estado: 'OPERATIVO', ubicacion: 'Oficina', fecha_adquisicion: '2024-01-01', observaciones: 'Para documentación de inspecciones' },
+                { codigo: 'HERR-016', nombre: 'Piqueta', tipo: 'HERRAMIENTA', marca: 'Estwing', modelo: 'Rock', serie: 'HER-2024-004', estado: 'OPERATIVO', ubicacion: 'Almacen Campo', fecha_adquisicion: '2024-01-01', observaciones: 'Para remoción de corrosión' },
+                { codigo: 'HERR-017', nombre: 'Escoba', tipo: 'HERRAMIENTA', marca: 'Generico', modelo: 'Standard', serie: 'HER-2024-005', estado: 'OPERATIVO', ubicacion: 'Almacen Campo', fecha_adquisicion: '2024-01-01', observaciones: 'Sin palo - para limpieza área' }
+            ];
+        }
+
+        function getCalibraciones() {
+            const hoy = new Date();
+            const hace30 = new Date(hoy - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            const hace60 = new Date(hoy - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            const proxima30 = new Date(hoy.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            const proxima60 = new Date(hoy.getTime() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            return [
+                { codigo: 'CAL-001', equipo_id: 1, equipo_nombre: 'Yugatron 4000', tipo: 'CALIBRACION_UT', fecha_calibracion: hace60, fecha_proxima: proxima60, resultado: 'APROBADO', laboratorio: 'Interno', observaciones: 'Calibración anual completada', estado: 'VIGENTE' },
+                { codigo: 'CAL-002', equipo_id: 2, equipo_nombre: 'Magnaflux Y-2', tipo: 'CALIBRACION_MT', fecha_calibracion: hace30, fecha_proxima: proxima30, resultado: 'APROBADO', laboratorio: 'SGS Peru', observaciones: 'Verificación de campo', estado: 'VIGENTE' },
+                { codigo: 'CAL-003', equipo_id: 4, equipo_nombre: 'Viking V5', tipo: 'CALIBRACION_VT', fecha_calibracion: hace30, fecha_proxima: proxima30, resultado: 'PENDIENTE', laboratorio: 'Externo', observaciones: 'En laboratorio第三方', estado: 'EN_PROCESO' },
+                { codigo: 'CAL-004', equipo_id: 5, equipo_nombre: 'OmniScan X3', tipo: 'CALIBRACION_UT', fecha_calibracion: hace60, fecha_proxima: proxima30, resultado: 'APROBADO', laboratorio: 'Olympus Service', observaciones: 'Calibración Phased Array', estado: 'VIGENTE' },
+                { codigo: 'CAL-005', equipo_id: 3, equipo_nombre: 'Luptec L-WH30', tipo: 'CALIBRACION_PT', fecha_calibracion: hace30, fecha_proxima: proxima60, resultado: 'APROBADO', laboratorio: 'Interno', observaciones: 'Verificación UV-A y sensibilidad', estado: 'VIGENTE' }
+            ];
+        }
+
+        function getCertificaciones() {
+            const hoy = new Date();
+            const hace90 = new Date(hoy - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            const hace180 = new Date(hoy - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            const proxima30 = new Date(hoy.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            const proxima60 = new Date(hoy.getTime() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            return [
+                { codigo: 'CERT-001', nombre: 'Certificación Nivel II PT', tipo: 'CERT_NDT', norma: 'ASNT SNT-TC-1A', nivel: 'II', fecha_emision: '2022-05-15', fecha_vencimiento: '2025-05-15', entidad: 'ASNT Peru', observador: 'Ing. Juan Pérez', estado: 'VIGENTE' },
+                { codigo: 'CERT-002', nombre: 'Certificación Nivel II MT', tipo: 'CERT_NDT', norma: 'ASNT SNT-TC-1A', nivel: 'II', fecha_emision: '2021-08-20', fecha_vencimiento: proxima30, entidad: 'PCN', observador: 'Sra. María López', estado: 'VIGENTE' },
+                { codigo: 'CERT-003', nombre: 'Certificación Nivel II UT', tipo: 'CERT_NDT', norma: 'ASNT SNT-TC-1A', nivel: 'II', fecha_emision: '2023-01-10', fecha_vencimiento: '2026-01-10', entidad: 'ASNT Peru', observador: 'Ing. Carlos Mendoza', estado: 'VIGENTE' },
+                { codigo: 'CERT-004', nombre: 'Certificación Nivel II VT', tipo: 'CERT_NDT', norma: 'ASNT SNT-TC-1A', nivel: 'II', fecha_emision: hace180, fecha_vencimiento: '2024-07-01', entidad: 'ICG', observador: 'Lic. Ana García', estado: 'VENCIDO' },
+                { codigo: 'CERT-005', nombre: 'Certificación Nivel III PT', tipo: 'CERT_NDT', norma: 'ASNT SNT-TC-1A', nivel: 'III', fecha_emision: '2020-03-15', fecha_vencimiento: proxima60, entidad: 'ASNT International', observador: 'Dr. Roberto Silva', estado: 'VIGENTE' },
+                { codigo: 'CERT-006', nombre: 'Certificación CSWIP 3.1', tipo: 'CERT_CSWIP', norma: 'ISO 9712', nivel: '3.1', fecha_emision: '2022-09-01', fecha_vencimiento: '2025-09-01', entidad: 'TWI', observador: 'Ing. Pedro Ramírez', estado: 'VIGENTE' },
+                { codigo: 'CERT-007', nombre: 'Acreditación ISO 17024', tipo: 'CERT_ACREDITACION', norma: 'ISO 17024', nivel: 'N/A', fecha_emision: '2021-06-30', fecha_vencimiento: '2024-06-30', entidad: 'INACAL', observador: 'Sra. Carmen Torres', estado: 'VENCIDO' }
+            ];
+        }
+
+        function getProcedimientos() {
+            return [
+                { codigo: 'PROC-PT-001', nombre: 'Procedimiento de Líquidos Penetrantes', tipo: 'PT', norma: 'ASTM E165', revision: 'Rev. 3', fecha_aprobacion: '2024-01-15', aprobador: 'Ing. Juan Pérez', estado: 'APROBADO', descripcion: 'Inspección mediante líquidos penetrantes para superficies no porosas' },
+                { codigo: 'PROC-MT-001', nombre: 'Procedimiento de Partículas Magnéticas', tipo: 'MT', norma: 'ASTM E709', revision: 'Rev. 2', fecha_aprobacion: '2024-02-01', aprobador: 'Sra. María López', estado: 'APROBADO', descripcion: 'Inspección mediante partículas magnéticas en componentes ferromagnéticos' },
+                { codigo: 'PROC-UT-001', nombre: 'Procedimiento de Ultrasonido Manual', tipo: 'UT', norma: 'ASTM E164', revision: 'Rev. 4', fecha_aprobacion: '2024-01-20', aprobador: 'Ing. Carlos Mendoza', estado: 'APROBADO', descripcion: 'Inspección ultrasónica manual en soldaduras' },
+                { codigo: 'PROC-UT-002', nombre: 'Procedimiento de Ultrasonido Phased Array', tipo: 'UT', norma: 'ASTM E2700', revision: 'Rev. 1', fecha_aprobacion: '2024-03-10', aprobador: 'Ing. Carlos Mendoza', estado: 'APROBADO', descripcion: 'Inspección ultrasónica con array Phased Array' },
+                { codigo: 'PROC-VT-001', nombre: 'Procedimiento de Inspección Visual', tipo: 'VT', norma: 'ASTM E2570', revision: 'Rev. 2', fecha_aprobacion: '2023-11-05', aprobador: 'Lic. Ana García', estado: 'APROBADO', descripcion: 'Inspección visual directa e indirecta' },
+                { codigo: 'PROC-PT-002', nombre: 'Procedimiento de PT en Campo', tipo: 'PT', norma: 'ASTM E165', revision: 'Rev. 1', fecha_aprobacion: '2024-04-01', aprobador: 'Ing. Juan Pérez', estado: 'PENDIENTE', descripcion: 'Procedimiento simplificado para inspecciones en campo' }
+            ];
+        }
+
+        function getIndicadores() {
+            return [
+                { codigo: 'IND-001', nombre: 'Efectividad de Inspectores', categoria: 'RRHH', formula: '(Inspectores Certificados / Total Inspectores) * 100', meta: 100, valor_actual: 85.7, unidad: '%', periodo: '2024-Q1', estado: 'FUERA_META' },
+                { codigo: 'IND-002', nombre: 'Tasa de Reportes Aprobados', categoria: 'CALIDAD', formula: '(Reportes Aprobados / Total Reportes) * 100', meta: 98, valor_actual: 99.2, unidad: '%', periodo: '2024-Q1', estado: 'EN_META' },
+                { codigo: 'IND-003', nombre: 'Cumplimiento de Entregas', categoria: 'OPERACIONES', formula: '(Entregas a Tiempo / Total Entregas) * 100', meta: 95, valor_actual: 92.5, unidad: '%', periodo: '2024-Q1', estado: 'FUERA_META' },
+                { codigo: 'IND-004', nombre: 'Tiempo Promedio de Entrega', categoria: 'OPERACIONES', formula: 'SUM(Días Entrega) / COUNT(Entregas)', meta: 5, valor_actual: 4.2, unidad: 'días', periodo: '2024-Q1', estado: 'EN_META' },
+                { codigo: 'IND-005', nombre: 'Incidentes de Seguridad', categoria: 'SEGURIDAD', formula: 'COUNT(Incidentes)', meta: 0, valor_actual: 0, unidad: 'incidentes', periodo: '2024-Q1', estado: 'EN_META' },
+                { codigo: 'IND-006', nombre: 'Equipos Operativos', categoria: 'MANTENIMIENTO', formula: '(Equipos Operativos / Total Equipos) * 100', meta: 90, valor_actual: 87.5, unidad: '%', periodo: '2024-Q1', estado: 'FUERA_META' },
+                { codigo: 'IND-007', nombre: 'Capacitaciones Completadas', categoria: 'RRHH', formula: 'COUNT(Capacitaciones)', meta: 12, valor_actual: 8, unidad: 'capacitaciones', periodo: '2024-Q1', estado: 'SIN_DATOS' },
+                { codigo: 'IND-008', nombre: 'Retraso en Calibraciones', categoria: 'MANTENIMIENTO', formula: '(Calibraciones Vencidas / Total Equipos) * 100', meta: 5, valor_actual: 2.5, unidad: '%', periodo: '2024-Q1', estado: 'EN_META' }
+            ];
+        }
+
+        function getInventario() {
+            return [
+                { codigo: 'INV-001', nombre: 'Líquido Penetrante Roteem', tipo: 'CONSUMIBLE_PT', cantidad: 50, unidad: 'litros', ubicacion: 'Almacen Principal', estado: 'DISPONIBLE', proveedor: 'Magnaflux', precio_unitario: 85.50 },
+                { codigo: 'INV-002', nombre: 'Revelador Roteem', tipo: 'CONSUMIBLE_PT', cantidad: 30, unidad: 'litros', ubicacion: 'Almacen Principal', estado: 'DISPONIBLE', proveedor: 'Magnaflux', precio_unitario: 65.00 },
+                { codigo: 'INV-003', nombre: 'Limpiador Roteem', tipo: 'CONSUMIBLE_PT', cantidad: 25, unidad: 'litros', ubicacion: 'Almacen Principal', estado: 'DISPONIBLE', proveedor: 'Magnaflux', precio_unitario: 55.00 },
+                { codigo: 'INV-004', nombre: 'Partículas Magnéticas Y-2', tipo: 'CONSUMIBLE_MT', cantidad: 100, unidad: 'kg', ubicacion: 'Almacen Principal', estado: 'DISPONIBLE', proveedor: 'Magnaflux', precio_unitario: 45.00 },
+                { codigo: 'INV-005', nombre: 'Ultrasound Couplant Gel', tipo: 'CONSUMIBLE_UT', cantidad: 200, unidad: 'litros', ubicacion: 'Almacen Lima', estado: 'DISPONIBLE', proveedor: 'Olympus', precio_unitario: 25.00 },
+                { codigo: 'INV-006', nombre: 'Cabezal UT Angulado 60°', tipo: 'REPUESTO', cantidad: 4, unidad: 'piezas', ubicacion: 'Taller', estado: 'DISPONIBLE', proveedor: 'Olympus', precio_unitario: 450.00 },
+                { codigo: 'INV-007', nombre: 'Cable Coaxial UT', tipo: 'REPUESTO', cantidad: 10, unidad: 'metros', ubicacion: 'Taller', estado: 'BAJO_STOCK', proveedor: 'Olympus', precio_unitario: 35.00 },
+                { codigo: 'INV-008', nombre: 'Cámara de Inspección V5', tipo: 'REPUESTO', cantidad: 2, unidad: 'piezas', ubicacion: 'Taller', estado: 'DISPONIBLE', proveedor: 'Eddyfi', precio_unitario: 1200.00 }
+            ];
+        }
+
+        function getSolicitudes() {
+            return [
+                { codigo: 'SOL-001', tipo: 'COMPRA', descripcion: 'Líquidos penetrantes para proyecto Camisea', estado: 'APROBADA', solicitante: 'Ing. Juan Pérez', fecha_solicitud: '2024-03-15', prioridad: 'URGENTE' },
+                { codigo: 'SOL-002', tipo: 'REPARACION', descripcion: 'Reparación de cable coaxial del Yugatron 4000', estado: 'PENDIENTE', solicitante: 'Tec. Carlos Mendoza', fecha_solicitud: '2024-04-01', prioridad: 'MEDIA' },
+                { codigo: 'SOL-003', tipo: 'COMPRA', descripcion: 'Partículas magnéticas Y-2 para campo Talara', estado: 'APROBADA', solicitante: 'Sra. María López', fecha_solicitud: '2024-03-20', prioridad: 'ALTA' },
+                { codigo: 'SOL-004', tipo: 'TRASLADO', descripcion: 'Traslado de equipo OmniScan a planta Ilo', estado: 'COMPLETADA', solicitante: 'Ing. Roberto Silva', fecha_solicitud: '2024-02-28', prioridad: 'MEDIA' },
+                { codigo: 'SOL-005', tipo: 'COMPRA', descripcion: 'Cabezales de repuesto para UT Phased Array', estado: 'RECHAZADA', solicitante: 'Ing. Carlos Mendoza', fecha_solicitud: '2024-03-25', prioridad: 'BAJA' }
+            ];
+        }
+
+        function getActividades() {
+            return [
+                { codigo: 'ACT-001', nombre: 'Inspección PT - Juntas Soldadas', tipo: 'INSPECCION', estado: 'PROGRAMADO', fecha_inicio: '2024-04-15', fecha_fin: '2024-04-20', ubicacion: 'Camisea', proyecto_id: 1, equipo_asignado: 'EQ-003', inspector: 'Ing. Juan Pérez', descripcion: 'Realizar PT en 50 juntas críticas' },
+                { codigo: 'ACT-002', nombre: 'Inspección MT - Tanque TK-101', tipo: 'INSPECCION', estado: 'EN_EJECUCION', fecha_inicio: '2024-04-10', fecha_fin: '2024-04-12', ubicacion: 'Talara', proyecto_id: 2, equipo_asignado: 'EQ-002', inspector: 'Sra. María López', descripcion: 'MT en soldaduras de tanque de almacenamiento' },
+                { codigo: 'ACT-003', nombre: 'Calibración - Yugatron 4000', tipo: 'MANTENIMIENTO', estado: 'PROGRAMADO', fecha_inicio: '2024-04-25', fecha_fin: '2024-04-25', ubicacion: 'Laboratorio Lima', proyecto_id: null, equipo_asignado: 'EQ-001', inspector: 'Tec. Pedro Ramírez', descripcion: 'Calibración anual de equipo UT' },
+                { codigo: 'ACT-004', nombre: 'Capacitación NDT Nivel II', tipo: 'CAPACITACION', estado: 'COMPLETADO', fecha_inicio: '2024-03-01', fecha_fin: '2024-03-15', ubicacion: 'Oficina Lima', proyecto_id: null, equipo_asignado: null, inspector: 'Dr. Roberto Silva', descripcion: 'Capacitación de actualización para inspectores' },
+                { codigo: 'ACT-005', nombre: 'Inspección UT - Caldero CB-500', tipo: 'INSPECCION', estado: 'PROGRAMADO', fecha_inicio: '2024-05-01', fecha_fin: '2024-05-10', ubicacion: 'Ventanilla', proyecto_id: 5, equipo_asignado: 'EQ-005', inspector: 'Ing. Carlos Mendoza', descripcion: 'UT en caldero de central térmica' }
+            ];
+        }
+
+        function getRecursos() {
+            return [
+                { actividad_id: 1, recurso_tipo: 'PERSONAL', recurso_id: 1, recurso_nombre: 'Ing. Juan Pérez', cantidad: 1, observacion: 'Inspector PT Nivel II' },
+                { actividad_id: 1, recurso_tipo: 'EQUIPO', recurso_id: 3, recurso_nombre: 'Luptec L-WH30', cantidad: 1, observacion: 'Equipo PT' },
+                { actividad_id: 1, recurso_tipo: 'MATERIAL', recurso_id: 1, recurso_nombre: 'Kit Líquidos Penetrantes', cantidad: 2, observacion: 'Para 50 pruebas' },
+                { actividad_id: 2, recurso_tipo: 'PERSONAL', recurso_id: 2, recurso_nombre: 'Sra. María López', cantidad: 1, observacion: 'Inspector MT Nivel II' },
+                { actividad_id: 2, recurso_tipo: 'EQUIPO', recurso_id: 2, recurso_nombre: 'Magnaflux Y-2', cantidad: 1, observacion: 'Yugo electromagnético' },
+                { actividad_id: 2, recurso_tipo: 'MATERIAL', recurso_id: 4, recurso_nombre: 'Partículas Magnéticas', cantidad: 5, observacion: 'Para MT húmedo' },
+                { actividad_id: 5, recurso_tipo: 'PERSONAL', recurso_id: 3, recurso_nombre: 'Ing. Carlos Mendoza', cantidad: 1, observacion: 'Inspector UT Nivel II' },
+                { actividad_id: 5, recurso_tipo: 'EQUIPO', recurso_id: 5, recurso_nombre: 'OmniScan X3', cantidad: 1, observacion: 'Equipo Phased Array' }
+            ];
+        }
+
+        function getProgramacion() {
+            const hoy = new Date();
+            const manana = new Date(hoy.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            const proximaSemana = new Date(hoy.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            return [
+                { actividad_id: 1, fecha_hora_inicio: `${manana}T08:00:00`, fecha_hora_fin: `${manana}T17:00:00`, ubicacion: 'Camisea', notas: 'Preparar área de trabajo y equipos', estado: 'CONFIRMADO' },
+                { actividad_id: 2, fecha_hora_inicio: `${hoy.toISOString().split('T')[0]}T07:00:00`, fecha_hora_fin: `${hoy.toISOString().split('T')[0]}T15:00:00`, ubicacion: 'Talara - Refinería', notas: 'Inspección en curso', estado: 'EN_PROCESO' },
+                { actividad_id: 5, fecha_hora_inicio: `${proximaSemana}T08:00:00`, fecha_hora_fin: `${proximaSemana}T17:00:00`, ubicacion: 'Ventanilla - Central Térmica', notas: 'Coordinar acceso con seguridad', estado: 'PENDIENTE' }
+            ];
+        }
+
+        function getFichasSeguridad() {
+            return [
+                { numero_ficha: 'MSDS-001', nombre_producto: 'Líquido Penetrante Roteem II', categoria: 'PRODUCTOS_QUIMICOS', nivel_riesgo: 'MEDIO', fabricante: 'Magnaflux', fecha_elaboracion: '2023-01-15', estados: 'Líquido rojo brillante. Irritante para ojos y piel. Inflamable.', medidas_precaucion: 'Usar guantes y gafas de protección. Mantener lejos de fuentes de calor. Ventilar áreas de trabajo.', primeros_auxilios: 'Contacto ocular: Lavar con agua 15 min. Contacto dermal: Lavar con agua y jabón. Ingestión: No inducir vómito, buscar atención médica.' },
+                { numero_ficha: 'MSDS-002', nombre_producto: 'Revelador Roteem Powder', categoria: 'PRODUCTOS_QUIMICOS', nivel_riesgo: 'BAJO', fabricante: 'Magnaflux', fecha_elaboracion: '2023-01-15', estados: 'Polvo blanco. Irritante leve. No inflamable.', medidas_precaucion: 'Usar máscara contra polvo. Evitar inhalación prolongada.', primeros_auxilios: 'Inhalación: Trasladar a área ventilada. Contacto ocular: Lavar con agua.' },
+                { numero_ficha: 'MSDS-003', nombre_producto: 'Partículas Magnéticas Y-2', categoria: 'PRODUCTOS_QUIMICOS', nivel_riesgo: 'BAJO', fabricante: 'Magnaflux', fecha_elaboracion: '2023-03-20', estados: 'Polvo oscuro fino. No tóxico. No inflamable.', medidas_precaucion: 'Usar máscara contra polvo. Evitar liberación al ambiente.', primeros_auxilios: 'Inhalación: Aire fresco. Ojos: Lavar con agua.' },
+                { numero_ficha: 'MSDS-004', nombre_producto: 'Acetona Industrial', categoria: 'PRODUCTOS_QUIMICOS', nivel_riesgo: 'ALTO', fabricante: 'Química Lima', fecha_elaboracion: '2022-11-10', estados: 'Líquido transparente. Altamente inflamable. Irritante. Peligroso para el ambiente acuático.', medidas_precaucion: 'Alejar de fuentes de ignición. No fumar. Usar guantes nitrilo y protección ocular. Ventilar. Residuos peligrosos.', primeros_auxilios: 'Incendio: Usar espuma, CO2, polvo químico. No usar agua. Derrame: Absorber con arena. No verter al desagüe.' },
+                { numero_ficha: 'MSDS-005', nombre_producto: 'Ultrasound Couplant Gel Premium', categoria: 'PRODUCTOS_QUIMICOS', nivel_riesgo: 'BAJO', fabricante: 'Olympus', fecha_elaboracion: '2023-06-01', estados: 'Gel translúcido. No tóxico. Biodegradable.', medidas_precaucion: 'No requiere precauciones especiales.', primeros_auxilios: 'No requiere medidas especiales.' }
+            ];
+        }
+
+        // ============ EJECUCIÓN ============
+
+        async function seedDatabase() {
+            const btn = document.getElementById('btnSeed');
+            btn.disabled = true;
+            btn.textContent = 'Poblando base de datos...';
+
+            log('Iniciando población de base de datos...', 'info');
+            
+            // Initialize DB
+            await NDT.db.initDB();
+            log('Base de datos inicializada', 'success');
+
+            totalItems = stores.reduce((sum, s) => sum + s.items.length, 0);
+
+            // Create store list UI
+            const listEl = document.getElementById('storesList');
+            stores.forEach(s => {
+                const el = document.createElement('div');
+                el.className = 'store-item list-group-item list-group-item-action';
+                el.setAttribute('data-store', s.name);
+                el.innerHTML = `<span class="badge bg-secondary me-2">${s.items.length}</span>${s.name}`;
+                listEl.appendChild(el);
+            });
+
+            // Process each store
+            for (const store of stores) {
+                try {
+                    log(`Guardando ${store.items.length} registros en ${store.name}...`, 'info');
+                    for (const item of store.items) {
+                        await NDT.db.saveSwellItem(store.name, item);
+                        processedItems++;
+                        updateProgress();
+                    }
+                    markStoreCompleted(store.name);
+                    log(`${store.items.length} registros guardados en ${store.name}`, 'success');
+                } catch (err) {
+                    log(`Error en ${store.name}: ${err.message}`, 'error');
+                }
+            }
+
+            log('¡Población completada!', 'success');
+            btn.textContent = '✓ Base de Datos Poblada';
+        }
+
+        document.getElementById('btnSeed').addEventListener('click', seedDatabase);
+    </script>
+</body>
+</html>
